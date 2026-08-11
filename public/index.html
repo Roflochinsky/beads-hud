@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>beads-hud</title>
+<link rel="stylesheet" href="/beads-hud.css" />
+</head>
+<body>
+<!--
+THESIS: A local deploy console for thinking — tasks and documents share one dotted
+canvas where every card is a live unit with a status light, refusing the flat
+document list and the tracker-in-a-white-page arrangement this category ships.
+OWN-WORLD: Railway's console. Near-black #0b0b0e with a cool violet undertone, a
+dotted canvas ground, cards at 10px radius on a single #24242e hairline, one violet
+#8b5cf6 reserved for the primary action, status carried by a small coloured light,
+Source Serif 4 for display over Golos Text UI and JetBrains Mono data.
+STORY: He picks a project in the top crumb, reads the board as four status columns,
+opens a card into the right drawer to see what holds it, switches the rail to
+documents laid out by folder or by epic, and edits a paragraph where he reads it.
+FIRST VIEWPORT: Icon rail left, crumb bar above, dotted canvas holding the kind rail
+and four columns; the violet "Новая задача" sits top right.
+FORM: Direction pinned by the user's brief and three Railway reference screens; the
+roll (seed 1f1535b9, assigned index 6) is superseded, as a pinned brief outranks it.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+-->
+
+<svg class="sprite" aria-hidden="true">
+  <symbol id="i-board" viewBox="0 0 20 20"><rect x="2.75" y="2.75" width="5.5" height="14.5" rx="1.5"/><rect x="11.75" y="2.75" width="5.5" height="8.5" rx="1.5"/></symbol>
+  <symbol id="i-docs" viewBox="0 0 20 20"><path d="M4.75 3.75h6.5l4 4v8.5a1.5 1.5 0 0 1-1.5 1.5h-9a1.5 1.5 0 0 1-1.5-1.5v-11a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M11 3.9V8h4.1"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.25"/><path d="M10 3.75v12.5" /><path d="M10 5.6a4.4 4.4 0 0 1 0 8.8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 20 20"><path d="M10 4.75v10.5M4.75 10h10.5"/></symbol>
+  <symbol id="i-close" viewBox="0 0 20 20"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></symbol>
+  <symbol id="i-down" viewBox="0 0 20 20"><path d="M6 8.25 10 12l4-3.75"/></symbol>
+  <symbol id="i-back" viewBox="0 0 20 20"><path d="M12 5.5 7.5 10l4.5 4.5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 20 20"><path d="M3.25 6.25a1.5 1.5 0 0 1 1.5-1.5h2.6l1.6 2h5.8a1.5 1.5 0 0 1 1.5 1.5v6.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5Z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 20 20"><path d="M8.5 11.5a3 3 0 0 0 4.24 0l2-2a3 3 0 0 0-4.24-4.24l-.8.8"/><path d="M11.5 8.5a3 3 0 0 0-4.24 0l-2 2a3 3 0 0 0 4.24 4.24l.8-.8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 20 20"><path d="m5.5 10.5 3 3 6-7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.25"/><path d="M10 6.5V10l2.5 1.75"/></symbol>
+</svg>
+
+<nav class="rail" aria-label="Разделы">
+  <a class="rail__mark" href="/" aria-label="beads-hud">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 1.5C6 6 6 18 12 22.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.4 8.4h19.2M2.4 15.6h19.2" stroke="currentColor" stroke-width="1.4"/></svg>
+  </a>
+  <button class="rail__tab" id="tab-board" type="button" aria-current="true" title="Задачи">
+    <svg class="ico" aria-hidden="true"><use href="#i-board"/></svg>
+  </button>
+  <button class="rail__tab" id="tab-docs" type="button" aria-current="false" title="Документы">
+    <svg class="ico" aria-hidden="true"><use href="#i-docs"/></svg>
+  </button>
+  <button class="rail__tab rail__tab--foot" id="theme" type="button" title="Тема: как в системе">
+    <svg class="ico" aria-hidden="true"><use href="#i-theme"/></svg>
+  </button>
+</nav>
+
+<header class="top">
+  <span class="dot dot--project" aria-hidden="true"></span>
+  <label class="crumb">
+    <select id="project" aria-label="Проект"></select>
+    <svg class="ico ico--sm" aria-hidden="true"><use href="#i-down"/></svg>
+  </label>
+  <span class="crumb__sep">/</span>
+  <span class="crumb crumb--static" id="view-name">задачи</span>
+  <span class="top__note" id="crumb"></span>
+  <span class="spacer"></span>
+  <button class="btn btn--accent" id="new-task" type="button" aria-label="Новая задача">
+    <svg class="ico ico--sm" aria-hidden="true"><use href="#i-plus"/></svg>
+    <span class="btn__label">Новая задача</span>
+  </button>
+</header>
+
+<main class="canvas" id="canvas">
+  <aside class="kinds" id="kinds" aria-label="Виды работ"></aside>
+  <section class="view" id="view-board">
+    <div class="board" id="board"></div>
+  </section>
+
+  <section class="view" id="view-docs" hidden>
+    <div class="view__head">
+      <h1 class="view__title">Документы</h1>
+      <div class="seg" role="group" aria-label="Раскладка документов">
+        <button class="seg__btn" id="by-dir" type="button" aria-pressed="true">
+          <svg class="ico ico--sm" aria-hidden="true"><use href="#i-folder"/></svg>по папкам
+        </button>
+        <button class="seg__btn" id="by-epic" type="button" aria-pressed="false" title="Колонка — эпик или задача, которая ссылается на документ">
+          <svg class="ico ico--sm" aria-hidden="true"><use href="#i-link"/></svg>по работе
+        </button>
+      </div>
+    </div>
+    <div class="board board--docs" id="docs-board"></div>
+  </section>
+
+  <section class="view view--read" id="view-read" hidden>
+    <div class="read__bar">
+      <button class="btn btn--quiet" id="read-back" type="button">
+        <svg class="ico ico--sm" aria-hidden="true"><use href="#i-back"/></svg>Документы
+      </button>
+      <span class="read__path" id="read-path"></span>
+      <span class="spacer"></span>
+      <span class="read__hint">нажмите на абзац, чтобы поправить его</span>
+      <span class="read__meta" id="read-meta"></span>
+    </div>
+    <article class="read" id="read"></article>
+  </section>
+</main>
+
+<aside class="drawer" id="task" hidden aria-label="Задача">
+  <div class="drawer__head">
+    <span class="mono" id="task-id"></span>
+    <span class="spacer"></span>
+    <button class="btn btn--quiet" id="task-move" type="button">В работу</button>
+    <button class="btn btn--quiet" id="task-shut" type="button">Закрыть</button>
+    <button class="icon-btn" id="task-x" type="button" aria-label="Закрыть панель">
+      <svg class="ico ico--sm" aria-hidden="true"><use href="#i-close"/></svg>
+    </button>
+  </div>
+  <div class="drawer__body" id="task-body"></div>
+</aside>
+
+<form class="dialog" id="entry" hidden>
+  <h2>Новая задача</h2>
+  <label class="field">
+    <span>Заголовок</span>
+    <input id="entry-title" autocomplete="off" required />
+  </label>
+  <div class="field-row">
+    <label class="field">
+      <span>Тип</span>
+      <select id="entry-type">
+        <option value="task">task</option>
+        <option value="feature">feature</option>
+        <option value="bug">bug</option>
+        <option value="epic">epic</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>Приоритет</span>
+      <select id="entry-priority">
+        <option value="0">P0</option><option value="1">P1</option>
+        <option value="2" selected>P2</option><option value="3">P3</option><option value="4">P4</option>
+      </select>
+    </label>
+  </div>
+  <label class="field">
+    <span>Эпик</span>
+    <select id="entry-parent"><option value="">без эпика</option></select>
+  </label>
+  <p class="field-err" id="entry-err" hidden></p>
+  <div class="dialog__acts">
+    <button type="button" class="btn btn--quiet" id="entry-cancel">Отмена</button>
+    <button type="submit" class="btn btn--accent">Создать</button>
+  </div>
+</form>
+<div class="scrim" id="scrim" hidden></div>
+
+<p class="toast" id="toast" role="status" aria-live="polite"></p>
+
+<script type="module" src="/beads-hud.js"></script>
+</body>
+</html>

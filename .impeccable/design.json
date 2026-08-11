@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-11T00:00:00Z",
+  "title": "Design System: harness",
+  "extensions": {
+    "colorMeta": {
+      "ground": { "role": "neutral", "displayName": "Земля", "canonical": "#0b0b0e", "light": "#f6f6f8", "tonalRamp": ["#08080b", "#0b0b0e", "#0d0d11", "#0e0e13", "#101016", "#16161c", "#1c1c24", "#24242e"] },
+      "rail": { "role": "neutral", "displayName": "Рейл", "canonical": "#08080b", "light": "#eeeef2", "tonalRamp": ["#050507", "#08080b", "#0b0b0e", "#101016", "#16161c", "#24242e", "#333341", "#4a4a5c"] },
+      "bar": { "role": "neutral", "displayName": "Планка", "canonical": "#0e0e13", "light": "#fbfbfd" },
+      "panel": { "role": "neutral", "displayName": "Панель", "canonical": "#101016", "light": "#ffffff" },
+      "card": { "role": "neutral", "displayName": "Карточка", "canonical": "#16161c", "light": "#ffffff", "tonalRamp": ["#0b0b0e", "#101016", "#16161c", "#1c1c24", "#24242e", "#333341", "#4a4a5c", "#6b6b7c"] },
+      "raise": { "role": "neutral", "displayName": "Подъём", "canonical": "#1c1c24", "light": "#f4f4f7" },
+      "sunk": { "role": "neutral", "displayName": "Углубление", "canonical": "#0d0d11", "light": "#f0f0f4" },
+      "line": { "role": "neutral", "displayName": "Волосок", "canonical": "#24242e", "light": "#e2e2ea" },
+      "edge": { "role": "neutral", "displayName": "Кромка", "canonical": "#333341", "light": "#cfcfda" },
+      "dots": { "role": "neutral", "displayName": "Точки земли", "canonical": "#ffffff0f", "light": "#0000000f" },
+      "text": { "role": "neutral", "displayName": "Текст", "canonical": "#e7e7ef", "light": "#191922", "tonalRamp": ["#16161c", "#24242e", "#3d3d4c", "#55556a", "#6c6c80", "#8a8a9b", "#a8a8b8", "#e7e7ef"] },
+      "dim": { "role": "neutral", "displayName": "Приглушённый", "canonical": "#a8a8b8", "light": "#55556a" },
+      "faint": { "role": "neutral", "displayName": "Едва слышный", "canonical": "#8a8a9b", "light": "#6c6c80" },
+      "accent": { "role": "primary", "displayName": "Консольный фиолетовый", "canonical": "oklch(62% 0.21 293)", "light": "#6d3ee0", "tonalRamp": ["oklch(18% 0.07 293)", "oklch(28% 0.11 293)", "oklch(38% 0.15 293)", "oklch(48% 0.19 293)", "oklch(62% 0.21 293)", "oklch(72% 0.16 293)", "oklch(84% 0.09 293)", "oklch(95% 0.03 293)"] },
+      "accent-lift": { "role": "primary", "displayName": "Фиолетовый на подъёме", "canonical": "#9d78f8", "light": "#5c2ed2" },
+      "accent-soft": { "role": "primary", "displayName": "Фиолетовая дымка", "canonical": "#8b5cf61f", "light": "#6d3ee014" },
+      "on-accent": { "role": "primary", "displayName": "Текст на акценте", "canonical": "#ffffff", "light": "#ffffff" },
+      "ok": { "role": "secondary", "displayName": "Зелёный закрытия", "canonical": "#3fb950", "light": "#1a7f37", "tonalRamp": ["oklch(20% 0.05 145)", "oklch(30% 0.08 145)", "oklch(40% 0.11 145)", "oklch(50% 0.14 145)", "oklch(68% 0.17 145)", "oklch(78% 0.13 145)", "oklch(88% 0.08 145)", "oklch(95% 0.03 145)"] },
+      "work": { "role": "secondary", "displayName": "Янтарь работы", "canonical": "#d8a132", "light": "#9a6700", "tonalRamp": ["oklch(20% 0.04 78)", "oklch(30% 0.06 78)", "oklch(42% 0.09 78)", "oklch(54% 0.11 78)", "oklch(73% 0.13 78)", "oklch(82% 0.10 78)", "oklch(90% 0.06 78)", "oklch(96% 0.02 78)"] },
+      "stop": { "role": "secondary", "displayName": "Красный упора", "canonical": "#f2665a", "light": "#c4362b", "tonalRamp": ["oklch(20% 0.06 25)", "oklch(30% 0.10 25)", "oklch(42% 0.14 25)", "oklch(54% 0.17 25)", "oklch(67% 0.17 25)", "oklch(78% 0.12 25)", "oklch(88% 0.07 25)", "oklch(96% 0.02 25)"] },
+      "idle": { "role": "secondary", "displayName": "Серый покоя", "canonical": "#6b6b7c", "light": "#6b6b7c", "tonalRamp": ["oklch(18% 0.01 285)", "oklch(26% 0.015 285)", "oklch(36% 0.02 285)", "oklch(44% 0.02 285)", "oklch(52% 0.02 285)", "oklch(66% 0.02 285)", "oklch(80% 0.015 285)", "oklch(94% 0.005 285)"] },
+      "ok-soft": { "role": "secondary", "displayName": "Кольцо закрытия", "canonical": "#3fb9501f", "light": "#1a7f3714" },
+      "work-soft": { "role": "secondary", "displayName": "Кольцо работы", "canonical": "#d8a1321f", "light": "#9a670014" },
+      "stop-soft": { "role": "secondary", "displayName": "Кольцо упора", "canonical": "#f2665a1f", "light": "#c4362b14" },
+      "idle-soft": { "role": "secondary", "displayName": "Кольцо покоя", "canonical": "#6b6b7c1f", "light": "#6b6b7c14" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Заголовок документа в чтении; на узком экране 27px, то есть ступень headline. Единственный кегль этого размера." },
+      "headline": { "displayName": "Headline", "purpose": "Заголовок задачи в правой панели; рядом заголовок вида 26px и заголовок диалога 20px." },
+      "section": { "displayName": "Section", "purpose": "h2 внутри документа; воздуха сверху 1.5em, снизу 0.1em." },
+      "subsection": { "displayName": "Subsection", "purpose": "h3 внутри документа." },
+      "card-title": { "displayName": "Card title", "purpose": "Заголовок карточки документа — нижняя граница серифа в системе." },
+      "prose": { "displayName": "Prose", "purpose": "Абзацы и списки документа в полосе не шире 780px. Набрана Golos, не серифом." },
+      "body": { "displayName": "Body", "purpose": "Базовый кегль интерфейса; описание задачи идёт им же с интерлиньяжем 1.7." },
+      "task-title": { "displayName": "Task title", "purpose": "Заголовок карточки задачи; у закрытой — --dim и зачёркивание цветом --edge." },
+      "control": { "displayName": "Control", "purpose": "Кнопки, пункты навигации, связи в панели. Плотная ступень 12.5px — имя колонки и сегмент." },
+      "meta": { "displayName": "Meta", "purpose": "Подвал карточки, чипы, путь в полосе чтения, подсказки (11.5–12px)." },
+      "label": { "displayName": "Label", "purpose": "Заглавная подпись группы в рейле и подпись блока в панели задачи. Подпись поля, не рубрика." },
+      "mono": { "displayName": "Mono", "purpose": "Машинные строки: id задачи, счётчики, приоритет, пути файлов, code (11–13px)." },
+      "editor": { "displayName": "Editor", "purpose": "Исходник markdown в textarea под правкой, растущей по содержимому." }
+    },
+    "shadows": [
+      { "name": "shadow", "value": "0 1px 2px #00000059, 0 4px 14px -4px #0000006b", "purpose": "Контактная высота: карточки задач и документов, активная кнопка сегмента. Светлая тема: 0 1px 2px #0000000f, 0 3px 10px -3px #00000014." },
+      { "name": "lift", "value": "0 12px 40px -12px #000000a6, 0 2px 8px #00000073", "purpose": "Плавающие слои: панель задачи, диалог, тост. Светлая тема: 0 14px 40px -14px #00000029, 0 2px 6px #0000000f." },
+      { "name": "open-ring", "value": "var(--shadow), 0 0 0 1px var(--accent)", "purpose": "Открытая карточка удваивает границу вместо смены заливки." },
+      { "name": "status-ring", "value": "0 0 0 3px var(--idle-soft)", "purpose": "Кольцо лампы состояния в 12% своего цвета; тень как свечение, не как глубина." }
+    ],
+    "overlay": [
+      { "name": "scrim", "value": "color-mix(in srgb, var(--ground) 72%, transparent)", "purpose": "Единственное затемнение системы, под диалогом. Гасит не чёрным, а собственной землёй мира, поэтому работает в обеих темах одним правилом." },
+      { "name": "scrim-blur", "value": "backdrop-filter: blur(2px)", "purpose": "Слабое размытие под тем же затемнением; единственное применение backdrop-filter в продукте." }
+    ],
+    "motion": [
+      { "name": "state", "value": "0.12s", "purpose": "Единственная длительность наведения: фон, граница, цвет. Ничего больше не анимируется." },
+      { "name": "toast-in", "value": "0.3s cubic-bezier(.16, 1, .3, 1)", "purpose": "Единственное появление в продукте: opacity и translateY(8px) у тоста." },
+      { "name": "reduced", "value": "0.01ms", "purpose": "При prefers-reduced-motion все transition и animation падают до 0.01ms." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "1080px" },
+      { "name": "stack", "value": "820px" },
+      { "name": "compact", "value": "600px" }
+    ],
+    "layout": [
+      { "name": "rail-w", "value": "56px" },
+      { "name": "bar-h", "value": "48px" },
+      { "name": "kind-rail-w", "value": "228px" },
+      { "name": "drawer-w", "value": "min(560px, 46vw)" },
+      { "name": "dialog-w", "value": "min(440px, calc(100vw - 32px))" },
+      { "name": "measure", "value": "min(780px, 100%)" },
+      { "name": "dot-lattice", "value": "radial-gradient(circle at 1px 1px, var(--dots) 1px, transparent 0) / 22px 22px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Главное действие экрана. Ровно одно на вид; при ширине до 600px подпись сворачивается, место остаётся.",
+      "html": "<button class=\"ds-btn ds-btn-primary\" type=\"button\"><svg class=\"ds-ico\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M10 4.75v10.5M4.75 10h10.5\"/></svg><span>Новая задача</span></button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: 500 13px/1.5 var(--ui, 'Golos', system-ui, sans-serif); border-radius: var(--r-sm, 7px); padding: 6px 11px; transition: background .12s, border-color .12s, color .12s; } .ds-ico { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; } .ds-btn-primary { background: var(--accent, #8b5cf6); border: 1px solid var(--accent, #8b5cf6); color: var(--on-accent, #fff); } .ds-btn-primary:hover { background: var(--accent-lift, #9d78f8); border-color: var(--accent-lift, #9d78f8); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #8b5cf6); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: .45; cursor: not-allowed; }"
+    },
+    {
+      "name": "Default & Quiet Button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "Обычное действие на карточной поверхности и тихая форма для действий внутри панелей и полос.",
+      "html": "<button class=\"ds-btn2 ds-btn2-default\" type=\"button\">В работу</button> <button class=\"ds-btn2 ds-btn2-quiet\" type=\"button\">Отмена</button>",
+      "css": ".ds-btn2 { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font: 500 13px/1.5 var(--ui, 'Golos', system-ui, sans-serif); border-radius: var(--r-sm, 7px); padding: 6px 11px; transition: background .12s, border-color .12s, color .12s; } .ds-btn2-default { background: var(--card, #16161c); border: 1px solid var(--line, #24242e); color: var(--text, #e7e7ef); } .ds-btn2-default:hover { background: var(--raise, #1c1c24); border-color: var(--edge, #333341); } .ds-btn2-quiet { background: transparent; border: 1px solid transparent; color: var(--dim, #a8a8b8); } .ds-btn2-quiet:hover { background: var(--raise, #1c1c24); color: var(--text, #e7e7ef); } .ds-btn2:focus-visible { outline: 2px solid var(--accent, #8b5cf6); outline-offset: 2px; }"
+    },
+    {
+      "name": "Task Card",
+      "kind": "card",
+      "refersTo": "card-task",
+      "description": "Живая единица доски: заголовок, затем подвал из типа, id, приоритета и красной метки ожидания. Перетаскивается между колонками.",
+      "html": "<button class=\"ds-card\" type=\"button\" draggable=\"true\"><div class=\"ds-card__title\">Вынести разбор markdown на сервер</div><div class=\"ds-card__foot\"><span class=\"ds-card__type\">feature</span><span class=\"ds-card__id\">041</span><span class=\"ds-card__p\">P1</span><span class=\"ds-card__wait\"><svg class=\"ds-ico-s\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><circle cx=\"10\" cy=\"10\" r=\"6.25\"/><path d=\"M10 6.5V10l2.5 1.75\"/></svg>ждёт 2</span></div></button>",
+      "css": ".ds-card { position: relative; display: block; width: 100%; text-align: left; cursor: pointer; background: var(--card, #16161c); border: 1px solid var(--line, #24242e); border-radius: var(--r, 10px); padding: 11px 13px 10px; color: var(--text, #e7e7ef); box-shadow: var(--shadow, 0 1px 2px #00000059, 0 4px 14px -4px #0000006b); font-family: var(--ui, 'Golos', system-ui, sans-serif); transition: border-color .12s, background .12s; } .ds-card:hover { border-color: var(--edge, #333341); background: var(--raise, #1c1c24); } .ds-card:focus-visible { outline: 2px solid var(--accent, #8b5cf6); outline-offset: 2px; } .ds-card:active { cursor: grabbing; } .ds-card__title { font-size: 13.5px; line-height: 1.42; font-weight: 500; margin: 0 0 9px; } .ds-card__foot { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--faint, #8a8a9b); } .ds-card__type { font-size: 11px; color: var(--dim, #a8a8b8); background: var(--sunk, #0d0d11); border: 1px solid var(--line, #24242e); border-radius: 20px; padding: 1px 7px; } .ds-card__id, .ds-card__p { font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 11px; } .ds-card__wait { margin-left: auto; display: flex; align-items: center; gap: 4px; color: var(--stop, #f2665a); } .ds-ico-s { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Document Card",
+      "kind": "card",
+      "refersTo": "card-doc",
+      "description": "Документ как живая единица: серифный заголовок, путь моноширинным, объём и дата, справа — счётчик ссылающихся задач.",
+      "html": "<button class=\"ds-sheet\" type=\"button\"><div class=\"ds-sheet__head\"><span class=\"ds-light ds-light--closed\"></span><h3 class=\"ds-sheet__title\">PRODUCT.md</h3></div><div class=\"ds-sheet__path\">harness/PRODUCT.md</div><div class=\"ds-sheet__foot\"><span>612 слов</span><span>вчера</span><span class=\"ds-sheet__work\"><svg class=\"ds-ico-s\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M8.5 11.5a3 3 0 0 0 4.24 0l2-2a3 3 0 0 0-4.24-4.24l-.8.8\"/><path d=\"M11.5 8.5a3 3 0 0 0-4.24 0l-2 2a3 3 0 0 0 4.24 4.24l.8-.8\"/></svg>3</span></div></button>",
+      "css": ".ds-sheet { display: block; width: 100%; text-align: left; cursor: pointer; background: var(--card, #16161c); border: 1px solid var(--line, #24242e); border-radius: var(--r, 10px); padding: 12px 13px; color: var(--text, #e7e7ef); box-shadow: var(--shadow, 0 1px 2px #00000059, 0 4px 14px -4px #0000006b); font-family: var(--ui, 'Golos', system-ui, sans-serif); transition: border-color .12s, background .12s; } .ds-sheet:hover { border-color: var(--edge, #333341); background: var(--raise, #1c1c24); } .ds-sheet:focus-visible { outline: 2px solid var(--accent, #8b5cf6); outline-offset: 2px; } .ds-sheet__head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 5px; } .ds-sheet__head .ds-light { align-self: center; } .ds-sheet__title { font: 600 14.5px/1.3 var(--serif, 'Source Serif', Georgia, serif); margin: 0; } .ds-sheet__path { font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 11px; color: var(--faint, #8a8a9b); word-break: break-all; } .ds-sheet__foot { display: flex; align-items: center; gap: 10px; margin-top: 9px; font-size: 11.5px; color: var(--faint, #8a8a9b); } .ds-sheet__work { display: flex; align-items: center; gap: 4px; margin-left: auto; color: var(--ok, #3fb950); } .ds-light { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--idle, #6b6b7c); box-shadow: 0 0 0 3px var(--idle-soft, #6b6b7c1f); } .ds-light--closed { background: var(--ok, #3fb950); box-shadow: 0 0 0 3px var(--ok-soft, #3fb9501f); } .ds-ico-s { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Status Light",
+      "kind": "custom",
+      "refersTo": "status-light",
+      "description": "Сигнатурный элемент: круг 7px с кольцом 3px в 12% своего цвета. Четыре состояния — покой, работа, упор, закрытие. Заливать карточку статусом запрещено.",
+      "html": "<div class=\"ds-lights\"><span class=\"ds-l\"></span><span class=\"ds-l ds-l--doing\"></span><span class=\"ds-l ds-l--blocked\"></span><span class=\"ds-l ds-l--closed\"></span></div>",
+      "css": ".ds-lights { display: flex; align-items: center; gap: 18px; padding: 6px 4px; } .ds-l { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--idle, #6b6b7c); box-shadow: 0 0 0 3px var(--idle-soft, #6b6b7c1f); } .ds-l--doing { background: var(--work, #d8a132); box-shadow: 0 0 0 3px var(--work-soft, #d8a1321f); } .ds-l--blocked { background: var(--stop, #f2665a); box-shadow: 0 0 0 3px var(--stop-soft, #f2665a1f); } .ds-l--closed { background: var(--ok, #3fb950); box-shadow: 0 0 0 3px var(--ok-soft, #3fb9501f); }"
+    },
+    {
+      "name": "Kind Rail Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Пункт списка видов работ со счётчиком открытых задач; текущий берёт фиолетовую дымку и полноцветную границу. Дочерний эпик сдвинут на 22px.",
+      "html": "<div class=\"ds-kinds\"><div class=\"ds-kinds__label\">Виды работ</div><button class=\"ds-kind\" type=\"button\"><span class=\"ds-kind__t\">Фичи</span><span class=\"ds-kind__n\">7</span></button><button class=\"ds-kind ds-kind--on\" type=\"button\"><span class=\"ds-kind__t\">Эпики</span><span class=\"ds-kind__n\">2</span></button><button class=\"ds-kind ds-kind--child\" type=\"button\"><span class=\"ds-kind__t\">Epic: обзор доски</span><span class=\"ds-kind__n\">3/7</span></button></div>",
+      "css": ".ds-kinds { display: flex; flex-direction: column; gap: 1px; padding: 10px; background: var(--panel, #101016); font-family: var(--ui, 'Golos', system-ui, sans-serif); } .ds-kinds__label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint, #8a8a9b); padding: 4px 8px 6px; } .ds-kind { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; cursor: pointer; background: transparent; border: 1px solid transparent; border-radius: var(--r-sm, 7px); padding: 6px 8px; color: var(--dim, #a8a8b8); font-size: 13px; transition: background .12s, color .12s; } .ds-kind:hover { background: var(--raise, #1c1c24); color: var(--text, #e7e7ef); } .ds-kind:focus-visible { outline: 2px solid var(--accent, #8b5cf6); outline-offset: 2px; } .ds-kind--on { background: var(--accent-soft, #8b5cf61f); border-color: var(--accent, #8b5cf6); color: var(--text, #e7e7ef); font-weight: 500; } .ds-kind--child { padding-left: 22px; } .ds-kind__t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-kind__n { margin-left: auto; font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 11px; color: var(--faint, #8a8a9b); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segmented-button",
+      "description": "Переключатель раскладки документов: вдавленный жёлоб, выбранная кнопка поднимается на карточную поверхность с контактной тенью.",
+      "html": "<div class=\"ds-seg\" role=\"group\"><button class=\"ds-seg__b\" type=\"button\" aria-pressed=\"true\"><svg class=\"ds-ico-s\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M3.25 6.25a1.5 1.5 0 0 1 1.5-1.5h2.6l1.6 2h5.8a1.5 1.5 0 0 1 1.5 1.5v6.5a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5Z\"/></svg>по папкам</button><button class=\"ds-seg__b\" type=\"button\" aria-pressed=\"false\"><svg class=\"ds-ico-s\" viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M8.5 11.5a3 3 0 0 0 4.24 0l2-2a3 3 0 0 0-4.24-4.24l-.8.8\"/><path d=\"M11.5 8.5a3 3 0 0 0-4.24 0l-2 2a3 3 0 0 0 4.24 4.24l.8-.8\"/></svg>по работе</button></div>",
+      "css": ".ds-seg { display: inline-flex; background: var(--sunk, #0d0d11); border: 1px solid var(--line, #24242e); border-radius: var(--r-sm, 7px); padding: 2px; font-family: var(--ui, 'Golos', system-ui, sans-serif); } .ds-seg__b { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; background: transparent; border: 0; border-radius: 5px; padding: 5px 10px; font-size: 12.5px; color: var(--dim, #a8a8b8); transition: background .12s, color .12s; } .ds-seg__b:hover { color: var(--text, #e7e7ef); } .ds-seg__b:focus-visible { outline: 2px solid var(--accent, #8b5cf6); outline-offset: 2px; } .ds-seg__b[aria-pressed='true'] { background: var(--card, #16161c); color: var(--text, #e7e7ef); box-shadow: var(--shadow, 0 1px 2px #00000059, 0 4px 14px -4px #0000006b); } .ds-ico-s { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Вдавленное поле с подписью сверху; фокус переводит границу в акцент, собственная обводка снята.",
+      "html": "<label class=\"ds-field\"><span>Заголовок</span><input class=\"ds-input\" value=\"Вынести разбор markdown на сервер\" /></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; font-family: var(--ui, 'Golos', system-ui, sans-serif); } .ds-field > span { font-size: 12px; color: var(--dim, #a8a8b8); } .ds-input { background: var(--sunk, #0d0d11); border: 1px solid var(--line, #24242e); border-radius: var(--r-sm, 7px); padding: 9px 11px; outline: none; color: var(--text, #e7e7ef); font: 400 14px/1.5 var(--ui, 'Golos', system-ui, sans-serif); transition: border-color .12s; } .ds-input:hover { border-color: var(--edge, #333341); } .ds-input:focus { border-color: var(--accent, #8b5cf6); }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Описательная пилюля фактов задачи — состояние с лампой, тип, приоритет, эпик. Не переключается.",
+      "html": "<div class=\"ds-chips\"><span class=\"ds-chip\"><span class=\"ds-chip__l\"></span>в работе</span><span class=\"ds-chip\">feature</span><span class=\"ds-chip\">P1</span></div>",
+      "css": ".ds-chips { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--ui, 'Golos', system-ui, sans-serif); } .ds-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--dim, #a8a8b8); background: var(--sunk, #0d0d11); border: 1px solid var(--line, #24242e); border-radius: 20px; padding: 3px 9px; } .ds-chip__l { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--work, #d8a132); box-shadow: 0 0 0 3px var(--work-soft, #d8a1321f); }"
+    },
+    {
+      "name": "Dialog on Scrim",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "Верхний слой системы: радиус 14px, кромка вместо волоска, тень подъёма. Затемнение под ним замешано из собственной земли мира, а не из чёрного.",
+      "html": "<div class=\"ds-scrim\"><form class=\"ds-dialog\"><h2>Новая задача</h2><label class=\"ds-dfield\"><span>Заголовок</span><input class=\"ds-dinput\" value=\"\" /></label><div class=\"ds-dacts\"><button class=\"ds-dbtn\" type=\"button\">Отмена</button><button class=\"ds-dbtn ds-dbtn--on\" type=\"submit\">Создать</button></div></form></div>",
+      "css": ".ds-scrim { position: relative; display: grid; place-items: center; min-height: 320px; padding: 24px; background: color-mix(in srgb, var(--ground, #0b0b0e) 72%, transparent); backdrop-filter: blur(2px); } .ds-dialog { width: min(440px, 100%); background: var(--panel, #101016); border: 1px solid var(--edge, #333341); border-radius: var(--r-lg, 14px); padding: 22px; box-shadow: var(--lift, 0 12px 40px -12px #000000a6, 0 2px 8px #00000073); display: flex; flex-direction: column; gap: 14px; font-family: var(--ui, 'Golos', system-ui, sans-serif); color: var(--text, #e7e7ef); } .ds-dialog h2 { margin: 0; font: 600 20px/1.2 var(--serif, 'Source Serif', Georgia, serif); } .ds-dfield { display: flex; flex-direction: column; gap: 6px; } .ds-dfield > span { font-size: 12px; color: var(--dim, #a8a8b8); } .ds-dinput { background: var(--sunk, #0d0d11); border: 1px solid var(--line, #24242e); border-radius: var(--r-sm, 7px); padding: 9px 11px; outline: none; color: inherit; font: 400 14px/1.5 inherit; } .ds-dinput:focus { border-color: var(--accent, #8b5cf6); } .ds-dacts { display: flex; justify-content: flex-end; gap: 8px; } .ds-dbtn { cursor: pointer; font: 500 13px/1.5 inherit; border-radius: var(--r-sm, 7px); padding: 6px 11px; background: transparent; border: 1px solid transparent; color: var(--dim, #a8a8b8); transition: background .12s, border-color .12s, color .12s; } .ds-dbtn:hover { background: var(--raise, #1c1c24); color: var(--text, #e7e7ef); } .ds-dbtn--on { background: var(--accent, #8b5cf6); border-color: var(--accent, #8b5cf6); color: var(--on-accent, #fff); } .ds-dbtn--on:hover { background: var(--accent-lift, #9d78f8); border-color: var(--accent-lift, #9d78f8); }"
+    },
+    {
+      "name": "Block Editor",
+      "kind": "custom",
+      "refersTo": "block-editor",
+      "description": "Правка происходит там, где чтение: абзац заменяется своим исходником в моноширинном поле с акцентной границей и подсказкой под ним.",
+      "html": "<div class=\"ds-blk\"><textarea class=\"ds-blk__edit\" rows=\"3\" spellcheck=\"false\">## Правило лампы\n\nСостояние несёт круг 7px с кольцом 3px.</textarea><div class=\"ds-blk__hint\">Ctrl+Enter — сохранить, Esc — отменить, пусто — удалить</div></div>",
+      "css": ".ds-blk { font-family: var(--ui, 'Golos', system-ui, sans-serif); } .ds-blk__edit { display: block; width: 100%; resize: none; background: var(--sunk, #0d0d11); border: 1px solid var(--accent, #8b5cf6); border-radius: var(--r-sm, 7px); padding: 10px 12px; color: var(--text, #e7e7ef); font: 400 13.5px/1.7 var(--mono, 'JetBrains Mono', ui-monospace, monospace); outline: none; } .ds-blk__hint { padding: 5px 2px 0; font-size: 11.5px; color: var(--faint, #8a8a9b); }"
+    },
+    {
+      "name": "Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Единственная анимация продукта: 0.3s появление в правом нижнем углу. Ошибка красит границу и текст в --stop и живёт 6s вместо 2.6s.",
+      "html": "<p class=\"ds-toast\" role=\"status\">Сохранено</p>",
+      "css": ".ds-toast { margin: 0; max-width: min(420px, 70vw); background: var(--panel, #101016); border: 1px solid var(--edge, #333341); border-radius: var(--r, 10px); padding: 11px 14px; font: 400 13px/1.5 var(--ui, 'Golos', system-ui, sans-serif); color: var(--text, #e7e7ef); box-shadow: var(--lift, 0 12px 40px -12px #000000a6, 0 2px 8px #00000073); transition: opacity .3s cubic-bezier(.16, 1, .3, 1), transform .3s cubic-bezier(.16, 1, .3, 1); } @media (prefers-reduced-motion: reduce) { .ds-toast { transition-duration: .01ms; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Ночной пульт",
+    "overview": "Harness выглядит как консоль развёртывания, но развёртывает не сервисы, а мышление. Экран почти чёрный с холодным фиолетовым подтоном, земля под карточками — точечная решётка, и каждая карточка на этой земле является живой единицей со своей лампой состояния. Плоский список документов и трекер на белой странице — две вещи, которые эта категория отгружает по умолчанию и от которых сборка отказалась осознанно.\n\nПлотность двойная и это намеренно. Слева и сверху — навигационный слой, где 11–13px, 7px радиусы и однопиксельные волоски позволяют держать весь проект в одном взгляде. В центре чтения — полоса в 780px, кегль 15.5px и интерлиньяж 1.75, в которой можно просидеть десять минут. Переход между этими плотностями отмечен материально: рабочий холст точечный, читальня — сплошная.\n\nМир тихий. Движение почти отсутствует: 0.12s на цвет и границу при наведении, одно появление тоста на 0.3s, и всё. Цвет тоже тихий: интерфейс состоит из семи оттенков почти-чёрного, единственный фиолетовый зарезервирован за главным действием, а состояние несёт лампа 7px, а не заливка. Светлая тема существует, но это исключение, которое пользователь просит вручную.",
+    "keyCharacteristics": [
+      "Тёмное по умолчанию, светлое — по явному переключателю, без ветки по системной теме",
+      "Точечная земля (решётка 22px) под работой, сплошная — под чтением",
+      "Один фиолетовый `--accent` на главное действие, выбор и фокус; больше нигде",
+      "Состояние — лампа 7px с мягким кольцом 3px, никогда не заливка карточки",
+      "Три самостоятельные гарнитуры: сериф на именах, Golos на речи интерфейса, моно на машинных строках",
+      "Одна граница в 1px и лестница радиусов 5/7/10/14/20",
+      "Тени двухступенчатые и рассеянные: `--shadow` на карточках, `--lift` на плавающих слоях"
+    ],
+    "rules": [
+      { "name": "Правило одного фиолетового", "body": "`--accent` обозначает намерение: главное действие, текущий выбор, фокус, открытую карточку. Он никогда не обозначает состояние и никогда не заливает поверхность больше кнопки. В верхней полосе он звучит дважды — точка проекта слева, главное действие справа — и это предел зоны.", "section": "colors" },
+      { "name": "Правило измеренного пола", "body": "`--faint` и `--dim` заданы измерением 4.5:1 против `--card` в каждой теме, а не на глаз (в тёмной `--faint` даёт 5.31:1, в светлой 5.13:1). Любая новая ступень серого проходит то же измерение до того, как получит имя.", "section": "colors" },
+      { "name": "Правило лампы", "body": "Состояние несёт круг 7px с кольцом 3px в 12% того же цвета. Карточка при этом остаётся `--card` в любом состоянии: цвет статуса нельзя разливать по поверхности, по границе или по заголовку.", "section": "colors" },
+      { "name": "Правило тёмного по умолчанию", "body": "Тёмное живёт на `:root`, светлое — на `[data-theme='light']` и включается только руками. Ветки `prefers-color-scheme` в системе нет и не должно быть: консоль читают ночью рядом с тёмным терминалом.", "section": "colors" },
+      { "name": "Правило трёх гарнитур", "body": "Сериф — только имена (заголовки документов, задач, разделов, диалогов). Golos — всё, что произносит интерфейс, включая прозу документа. Моно — только то, что напечатала машина: id, счётчики, пути, код, исходник markdown. Гарнитура здесь сообщает происхождение текста.", "section": "typography" },
+      { "name": "Правило нижней границы серифа", "body": "Сериф не опускается ниже 14.5px и не берёт вес меньше 600. Мелкий сериф в тёмной теме мылится и перестаёт отличаться от Golos, а вместе с этим исчезает и смысл различения.", "section": "typography" },
+      { "name": "Правило меры", "body": "Полоса чтения — `min(780px, 100%)`, заголовку дают больше воздуха сверху (1.5em), чем снизу (0.1em): заголовок принадлежит тому, что под ним.", "section": "typography" },
+      { "name": "Правило словаря beads", "body": "Интерфейс говорит по-русски словами `bd`: «открыто», «в работе», «заблокировано», «закрыто». Типы задач (`task`, `feature`, `bug`, `epic`) остаются латиницей и моноширинными, потому что именно так их печатает `bd`; переводить их — значит заводить второй словарь.", "section": "typography" },
+      { "name": "Правило точечной земли", "body": "Рабочий холст всегда несёт решётку `radial-gradient(circle at 1px 1px, var(--dots) 1px, transparent 0)` с шагом 22px. Читальня её снимает и берёт сплошную землю — так переход от работы к чтению чувствуется материалом, а не только шириной колонки.", "section": "layout" },
+      { "name": "Правило неподвижного действия", "body": "Главное действие не переезжает и не прячется в меню при сужении. Сжимается его подпись, не его место.", "section": "layout" },
+      { "name": "Правило двух ступеней", "body": "В системе ровно две высоты: содержимое (`--shadow`) и плавающий слой (`--lift`). Третьей ступени нет; если элементу нужна тень сильнее контактной — он на самом деле просится в плавающий слой.", "section": "elevation" },
+      { "name": "Правило рассеянной тени", "body": "Все тени мягкие, с отрицательным spread на дальнем слое. Жёсткая смещённая тень без размытия не принадлежит этому миру.", "section": "elevation" },
+      { "name": "Правило неподвижности", "body": "Движение в системе — только 0.12s на цвет, фон и границу при наведении, плюс одно появление тоста на 0.3s. Ничего не выезжает, не масштабируется и не пульсирует. При `prefers-reduced-motion` все длительности падают до 0.01ms.", "section": "components" }
+    ],
+    "dos": [
+      "**Do** держать состояние в лампе 7px с кольцом 3px и оставлять поверхность карточки `--card` во всех четырёх состояниях.",
+      "**Do** тратить `--accent` только на намерение: главное действие, текущий выбор, фокус, открытую карточку, ссылку в прозе.",
+      "**Do** проверять новый серый измерением 4.5:1 против `--card` в обеих темах, прежде чем давать ему имя.",
+      "**Do** ставить сериф на имена (от 14.5px и веса 600), Golos — на речь интерфейса и прозу, моно — на машинные строки: id, счётчики, пути, код, исходник markdown.",
+      "**Do** рисовать новые иконки в тот же спрайт: сетка 20×20, обводка 1.5px, круглые концы и стыки, без заливки.",
+      "**Do** класть новую поверхность на лестницу радиусов 5/7/10/14/20 и на единственный волосок 1px `--line`.",
+      "**Do** оставлять пунктир только там, куда можно что-то положить: пустая колонка, цель перетаскивания, «добавить абзац».",
+      "**Do** называть состояния словами `bd` по-русски и оставлять типы задач латиницей моноширинными.",
+      "**Do** снимать точечную землю в любом длинном чтении и возвращать её на любой рабочий холст."
+    ],
+    "donts": [
+      "**Don't** заливать карточку, её границу или заголовок цветом статуса — для этого есть лампа.",
+      "**Don't** брать `--accent` под состояние, предупреждение или крупную заливку и не добавлять третий акцентный элемент в зону, где он уже звучит дважды (точка проекта и главное действие в верхней полосе).",
+      "**Don't** расширять `--accent` как подложку под текст мельче 13px/500: в тёмной теме пара белого с фиолетовым даёт 4.23:1 — ниже того пола 4.5:1, который держит нейтральный ряд, и перед повторным использованием фиолетовый нужно затемнить.",
+      "**Don't** набирать серифом прозу, подписи и всё, что мельче 14.5px.",
+      "**Don't** ставить системную гарнитуру на дисплейный уровень: все три лица self-hosted с кириллическими подмножествами, `Georgia` и `system-ui` живут только в откате.",
+      "**Don't** вводить третью ступень тени и не рисовать жёсткую смещённую тень без размытия.",
+      "**Don't** заводить ветку `prefers-color-scheme`: тёмное — поверхность, светлое — то, что просят руками.",
+      "**Don't** подставлять эмодзи или юникод-глифы вместо иконки: любой значок берётся из спрайта через `<use>`.",
+      "**Don't** использовать заглавную подпись 11px/0.06em как рубрику над заголовком — она подписывает поле или группу и стоит только над содержимым, которое называет.",
+      "**Don't** добавлять выезды, масштабирования и пульсации: единственная анимация мира — появление тоста."
+    ]
+  }
+}
