@@ -56,9 +56,28 @@ beads-hud отвечает на оба и ставит ответ туда, ку
 
 ```bash
 npm i -g @roflochinsky/beads-hud
+beads-hud install
 ```
 
-Дальше нужно сказать Claude Code, что строку статуса рисует beads-hud, а при старте сессии надо поднимать доску. Обе настройки живут в `~/.claude/settings.json` (для одного проекта — в `.claude/settings.json` внутри него):
+Вторая команда прописывает в `~/.claude/settings.json` строку статуса и хук автозапуска. Она показывает, что изменит, кладёт рядом копию прежнего файла и **не забирает чужую строку статуса молча**: если там уже что-то не наше — остановится и скажет. Существующие хуки не трогает, свой дописывает рядом.
+
+```
+beads-hud install --dry-run    # показать, что изменится, и выйти
+beads-hud install --project    # в .claude/settings.json текущего проекта
+beads-hud install --force      # заменить чужую строку статуса
+beads-hud uninstall            # убрать только своё
+```
+
+Строка появится в **следующей** сессии: Claude Code читает настройки при старте. Проверить, что скрипт работает, можно не выходя из текущей:
+
+```bash
+echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10},"cost":{"total_cost_usd":0},"cwd":"'"$PWD"'"}' | beads-hud-statusline
+```
+
+<details>
+<summary><strong>Если правите настройки руками</strong></summary>
+
+Обе настройки живут в `~/.claude/settings.json` (для одного проекта — в `.claude/settings.json` внутри него):
 
 ```json
 {
@@ -82,11 +101,7 @@ npm i -g @roflochinsky/beads-hud
 > [!NOTE]
 > Файла может не быть — создайте. Если он есть, добавьте недостающие ключи, а не перезаписывайте: `statusLine` в Claude Code один, и ваш прежний он заменит.
 
-Строка появится в **следующей** сессии: Claude Code читает `settings.json` при старте. Проверить, что скрипт вообще работает, можно не выходя из текущей:
-
-```bash
-echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10},"cost":{"total_cost_usd":0},"cwd":"'"$PWD"'"}' | beads-hud-statusline
-```
+</details>
 
 ## Доска
 
@@ -148,6 +163,7 @@ echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10}
 | `beads-hud-up` | Хук `SessionStart`. Если сервер жив — молчит и ничего не дублирует |
 | `beads-hud-statusline` | Строка статуса. Чистый `sh` плюс `jq`, около 20 мс на отрисовку |
 | `beads-hud-open` | Открывает браузер: `wslview`, затем `xdg-open`, затем `powershell.exe` |
+| `beads-hud install` | Прописывает строку статуса и хук в настройки Claude Code; `uninstall` убирает только своё |
 | `~/.cache/beads-hud/server.json` | Состояние сервера: адрес и pid |
 | `~/.cache/beads-hud/bd-*.json` | Кэш беадсовых чисел для строки |
 

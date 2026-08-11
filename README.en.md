@@ -59,9 +59,28 @@ Green below 60%, amber from 60%, red from 85%. Every number except the beads one
 
 ```bash
 npm i -g @roflochinsky/beads-hud
+beads-hud install
 ```
 
-Then tell Claude Code that beads-hud draws the status line, and that the board should come up on session start. Both settings live in `~/.claude/settings.json` (or in `.claude/settings.json` inside a single project):
+The second command writes the status line and the autostart hook into `~/.claude/settings.json`. It prints what it will change, leaves a copy of the previous file next to it, and **never takes over someone else's status line silently**: if one is already set and it isn't ours, it stops and says so. Existing hooks are left alone; ours is appended beside them.
+
+```
+beads-hud install --dry-run    # print the change and exit
+beads-hud install --project    # into .claude/settings.json of the current project
+beads-hud install --force      # replace a foreign status line
+beads-hud uninstall            # remove only what we added
+```
+
+The line appears in the **next** session: Claude Code reads settings at startup. To check the script itself without leaving the current one:
+
+```bash
+echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10},"cost":{"total_cost_usd":0},"cwd":"'"$PWD"'"}' | beads-hud-statusline
+```
+
+<details>
+<summary><strong>Editing the settings by hand</strong></summary>
+
+Both settings live in `~/.claude/settings.json` (or in `.claude/settings.json` inside a single project):
 
 ```json
 {
@@ -85,11 +104,7 @@ Then tell Claude Code that beads-hud draws the status line, and that the board s
 > [!NOTE]
 > The file may not exist — create it. If it does, add the missing keys rather than overwriting: Claude Code has exactly one `statusLine`, and this replaces whatever you had.
 
-The line appears in the **next** session: Claude Code reads `settings.json` at startup. To check the script itself without leaving the current one:
-
-```bash
-echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10},"cost":{"total_cost_usd":0},"cwd":"'"$PWD"'"}' | beads-hud-statusline
-```
+</details>
 
 ## The board
 
@@ -151,6 +166,7 @@ Dark by default, light from the button at the bottom of the rail. Both are built
 | `beads-hud-up` | The `SessionStart` hook. If the server is alive it stays quiet and duplicates nothing |
 | `beads-hud-statusline` | The status line. Plain `sh` plus `jq`, about 20 ms per repaint |
 | `beads-hud-open` | Opens the browser: `wslview`, then `xdg-open`, then `powershell.exe` |
+| `beads-hud install` | Writes the status line and the hook into Claude Code settings; `uninstall` removes only what we added |
 | `~/.cache/beads-hud/server.json` | Server state: address and pid |
 | `~/.cache/beads-hud/bd-*.json` | Cached beads numbers for the line |
 

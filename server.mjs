@@ -153,6 +153,24 @@ function blocksOf(md) {
 
 const rendered = (md) => blocksOf(md).map((b) => ({ ...b, html: marked.parse(b.src) }))
 
+// beads-hud install / uninstall — writing into Claude Code's settings is an
+// explicit command, never a postinstall side effect.
+if (process.argv[2] === 'install' || process.argv[2] === 'uninstall') {
+  const flags = process.argv.slice(3)
+  const opts = {
+    project: flags.includes('--project'),
+    force: flags.includes('--force'),
+    dryRun: flags.includes('--dry-run'),
+  }
+  const mod = await import('./bin/install.mjs')
+  try {
+    process.exit(await mod[process.argv[2]](opts))
+  } catch (e) {
+    console.error(e.message)
+    process.exit(1)
+  }
+}
+
 // node server.mjs selfcheck — the splitter decides what a save overwrites, so a
 // wrong offset silently eats a neighbouring paragraph.
 if (process.argv[2] === 'selfcheck') {
