@@ -33,6 +33,8 @@ const STATUS = { open: 'открыта', in_progress: 'в работе', closed:
 let root = localStorage.getItem('beadshud.root') || ''
 let sel = localStorage.getItem('beadshud.sel') || 'all'
 let view = 'board'
+let taskView = localStorage.getItem('beadshud.taskView') || 'board'
+let sort = { key: '', dir: 1 }
 let docGroup = localStorage.getItem('beadshud.docGroup') || 'dir'
 let data = { docs: [], issues: [], groups: [], loose: [] }
 let waiting = false
@@ -42,16 +44,16 @@ let task = null
 let editing = null
 
 /* ── Theme ─────────────────────────────────────────────────────── */
-// The console is read at a desk at night, next to a dark terminal; dark is the
-// surface, and light is the exception someone deliberately asks for.
+// Liquid glass lives on the light promo wallpaper; dark is the exception
+// someone deliberately asks for.
 const applyTheme = (t) => {
-  if (t === 'light') document.documentElement.dataset.theme = 'light'
+  if (t === 'dark') document.documentElement.dataset.theme = 'dark'
   else delete document.documentElement.dataset.theme
-  $('theme').title = t === 'light' ? 'Тема: светлая' : 'Тема: тёмная'
+  $('theme').title = t === 'dark' ? 'Тема: тёмная' : 'Тема: светлая'
 }
 applyTheme(localStorage.getItem('beadshud.theme'))
 $('theme').onclick = () => {
-  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'
   localStorage.setItem('beadshud.theme', next)
   applyTheme(next)
 }
@@ -63,7 +65,8 @@ function show(next) {
   $('view-board').hidden = next !== 'board'
   $('view-docs').hidden = next !== 'docs'
   $('view-read').hidden = next !== 'read'
-  $('kinds').hidden = next !== 'board'
+  // The graph is the whole project's map, so the kind filter has nothing to say there.
+  $('kinds').hidden = next !== 'board' || taskView === 'graph'
   $('tab-board').setAttribute('aria-current', String(next === 'board'))
   $('tab-docs').setAttribute('aria-current', String(next !== 'board'))
   $('view-name').textContent =
@@ -78,6 +81,32 @@ $('tab-docs').onclick = () => {
 }
 $('read-back').onclick = () => show('docs')
 
+/* ── Task view switcher ────────────────────────────────────────── */
+
+const TASK_VIEWS = ['board', 'table', 'graph']
+function setTaskView(v) {
+  taskView = v
+  localStorage.setItem('beadshud.taskView', v)
+  $('task-seg').style.setProperty('--seg-i', TASK_VIEWS.indexOf(v))
+  $('tv-board').setAttribute('aria-pressed', String(v === 'board'))
+  $('tv-table').setAttribute('aria-pressed', String(v === 'table'))
+  $('tv-graph').setAttribute('aria-pressed', String(v === 'graph'))
+  $('board').hidden = v !== 'board'
+  $('tbl').hidden = v !== 'table'
+  $('graphview').hidden = v !== 'graph'
+  $('kinds').hidden = view !== 'board' || v === 'graph'
+  renderTasks()
+}
+$('tv-board').onclick = () => setTaskView('board')
+$('tv-table').onclick = () => setTaskView('table')
+$('tv-graph').onclick = () => setTaskView('graph')
+
+function renderTasks() {
+  if (taskView === 'board') renderBoard()
+  else if (taskView === 'table') renderTable()
+  else renderGraph()
+}
+
 /* ── Kind rail ─────────────────────────────────────────────────── */
 
 function kindItem(label, meta, key, child) {
@@ -90,7 +119,7 @@ function kindItem(label, meta, key, child) {
     sel = key
     localStorage.setItem('beadshud.sel', key)
     renderKinds()
-    renderBoard()
+    renderTasks()
   }
   return b
 }
@@ -223,6 +252,259 @@ function renderBoard() {
   }
 }
 
+/* ── Table ─────────────────────────────────────────────────────── */
+
+const nameOf = (id) => data.issues.find((x) => x.id === id)?.title || id
+const COLNAME = Object.fromEntries(COLUMNS.map((c) => [c.key, c.label]))
+const ORDER = { todo: 0, doing: 1, blocked: 2, closed: 3 }
+const TCOLS = [
+  { key: 'status', label: 'Статус' },
+  { key: 'id', label: 'ID' },
+  { key: 'title', label: 'Задача' },
+  { key: 'type', label: 'Тип' },
+  { key: 'p', label: 'P' },
+  { key: 'epic', label: 'Эпик' },
+  { key: 'wait', label: 'Ждёт' },
+  { key: 'upd', label: 'Обновлена' },
+]
+const tval = (i, k) =>
+  k === 'status' ? ORDER[i.column]
+  : k === 'id' ? i.id
+  : k === 'title' ? i.title.toLowerCase()
+  : k === 'type' ? i.issue_type
+  : k === 'p' ? i.priority
+  : k === 'epic' ? (i.parent ? nameOf(i.parent).toLowerCase() : '')
+  : k === 'wait' ? i.blockedBy.length
+  : i.updated_at || ''
+
+function renderTable() {
+  const box = $('tbl')
+  box.replaceChildren()
+  if (waiting && !data.issues.length) return box.appendChild(el('p', 'tbl__empty', 'считаю задачи…'))
+  const items = selected()
+  if (!items.length) return box.appendChild(el('p', 'tbl__empty', data.error || 'Здесь пока нет задач.'))
+
+  const list = [...items].sort((a, b) => {
+    if (sort.key) {
+      const x = tval(a, sort.key)
+      const y = tval(b, sort.key)
+      if (x < y) return -sort.dir
+      if (x > y) return sort.dir
+    }
+    return ORDER[a.column] - ORDER[b.column] || a.priority - b.priority || a.id.localeCompare(b.id)
+  })
+
+  const table = el('table')
+  const hr = el('tr')
+  for (const c of TCOLS) {
+    const th = el('th', sort.key === c.key ? 'is-sorted' : null)
+    const b = el('button')
+    b.type = 'button'
+    b.appendChild(el('span', null, c.label))
+    if (sort.key === c.key) b.appendChild(icon('down', 'ico' + (sort.dir > 0 ? ' ico--asc' : '')))
+    b.onclick = () => {
+      sort = sort.key !== c.key ? { key: c.key, dir: 1 } : sort.dir > 0 ? { key: c.key, dir: -1 } : { key: '', dir: 1 }
+      renderTable()
+    }
+    th.appendChild(b)
+    hr.appendChild(th)
+  }
+  table.appendChild(el('thead')).appendChild(hr)
+
+  const tb = el('tbody')
+  for (const i of list) {
+    const tr = el('tr', (i.status === 'closed' ? 'is-closed' : '') + (task === i.id ? ' is-open' : ''))
+    const cell = (node) => tr.appendChild(el('td')).appendChild(node)
+    const st = el('span', 'tbl__status')
+    st.appendChild(el('span', 'light' + (i.column === 'todo' ? '' : ' light--' + i.column)))
+    st.appendChild(el('span', null, COLNAME[i.column]))
+    cell(st)
+    cell(el('span', 'tbl__id', i.id.split('-').pop()))
+    cell(el('span', 'tbl__title', i.title))
+    cell(el('span', 'tbl__type', i.issue_type))
+    cell(el('span', 'tbl__p' + (i.priority === 0 ? ' tbl__p--p0' : ''), 'P' + i.priority))
+    cell(el('span', 'tbl__epic', i.parent ? nameOf(i.parent) : '—'))
+    if (i.blockedBy.length) {
+      const w = el('span', 'tbl__wait')
+      w.appendChild(icon('clock'))
+      w.appendChild(el('span', null, String(i.blockedBy.length)))
+      cell(w)
+    } else cell(el('span', 'tbl__date', '—'))
+    cell(el('span', 'tbl__date', (i.updated_at || '').slice(0, 10) || '—'))
+    tr.tabIndex = 0
+    tr.onclick = () => openTask(i.id)
+    tr.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        openTask(i.id)
+      }
+    }
+    tb.appendChild(tr)
+  }
+  table.appendChild(tb)
+  box.appendChild(table)
+}
+
+/* ── Graph ─────────────────────────────────────────────────────── */
+
+const svgEl = (tag) => document.createElementNS('http://www.w3.org/2000/svg', tag)
+
+/**
+ * The epic tree is the skeleton, blocker arrows ride on top: both relationships
+ * from PRODUCT.md on one screen. Tiered layout — a parent sits at the vertical
+ * middle of its children, clusters stack; leaves each take one row.
+ */
+function renderGraph() {
+  const box = $('graphview')
+  box.replaceChildren()
+  if (waiting && !data.issues.length) return box.appendChild(el('p', 'graph__empty', 'считаю задачи…'))
+  if (!data.issues.length) return box.appendChild(el('p', 'graph__empty', data.error || 'Здесь пока нет задач.'))
+
+  const NW = 260, NH = 70, GX = 96, GY = 10, CLUSTER = 30, PAD = 28
+  const byId = new Map(data.issues.map((i) => [i.id, i]))
+  const kidsOf = (id) =>
+    data.issues.filter((i) => i.parent === id).sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))
+  const groupIds = new Set(data.groups.map((g) => g.id))
+
+  // pos holds pixel coordinates of each node's top-left corner.
+  const pos = new Map()
+  let cursor = PAD + 6
+  let maxDepth = 0
+  const place = (i, depth) => {
+    maxDepth = Math.max(maxDepth, depth)
+    const kids = kidsOf(i.id)
+    if (!kids.length) {
+      pos.set(i.id, { x: PAD + depth * (NW + GX), y: cursor })
+      cursor += NH + GY
+      return cursor - GY - NH
+    }
+    const ys = kids.map((k) => place(k, depth + 1))
+    const mid = (ys[0] + ys[ys.length - 1]) / 2
+    pos.set(i.id, { x: PAD + depth * (NW + GX), y: mid })
+    return mid
+  }
+
+  for (const g of data.groups.filter((g) => !g.parent || !byId.has(g.parent))) {
+    place(byId.get(g.id) || g, 0)
+    cursor += CLUSTER
+  }
+  let W = PAD * 2 + (maxDepth + 1) * NW + maxDepth * GX
+  const labels = []
+  // The junk drawer flows into a grid of columns: twenty parentless tasks are a
+  // field, not a tower under the epics.
+  const rest = [...data.loose, ...data.issues.filter((i) => !pos.has(i.id) && !data.loose.includes(i))].filter(
+    (i) => !pos.has(i.id),
+  )
+  if (rest.length) {
+    const cols = Math.max(1, Math.min(3, Math.ceil(rest.length / 8)))
+    labels.push({ text: 'Без эпика', y: cursor })
+    cursor += 26
+    rest.forEach((i, n) => {
+      pos.set(i.id, { x: PAD + (n % cols) * (NW + 24), y: cursor + Math.floor(n / cols) * (NH + GY) })
+    })
+    cursor += Math.ceil(rest.length / cols) * (NH + GY)
+    W = Math.max(W, PAD * 2 + cols * NW + (cols - 1) * 24)
+  }
+
+  const H = cursor + PAD
+  const field = el('div', 'graph__field')
+  field.style.width = W + 'px'
+  field.style.height = H + 'px'
+
+  const svg = svgEl('svg')
+  svg.setAttribute('class', 'graph__edges')
+  svg.setAttribute('width', W)
+  svg.setAttribute('height', H)
+  svg.innerHTML =
+    '<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+    '<path d="M0 0 8 4 0 8Z" style="fill:var(--stop)" stroke="none"/></marker></defs>'
+
+  for (const i of data.issues) {
+    if (!i.parent || !pos.has(i.parent) || !pos.has(i.id)) continue
+    const a = pos.get(i.parent)
+    const b = pos.get(i.id)
+    const x1 = a.x + NW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2
+    const p = svgEl('path')
+    p.setAttribute('d', `M${x1} ${y1}C${x1 + GX / 2} ${y1} ${x2 - GX / 2} ${y2} ${x2} ${y2}`)
+    p.setAttribute('class', 'edge')
+    svg.appendChild(p)
+  }
+  // ponytail: backward blocker arrows draw an S through the field; orthogonal
+  // routing if a real project makes them unreadable.
+  for (const i of data.issues) {
+    for (const b of i.blockedBy) {
+      if (!pos.has(b) || !pos.has(i.id)) continue
+      const s = pos.get(b)
+      const t = pos.get(i.id)
+      let d
+      if (s.x === t.x) {
+        const x = s.x, y1 = s.y + NH / 2, y2 = t.y + NH / 2
+        const bow = 36 + Math.min(40, Math.abs(y2 - y1) / 8)
+        d = `M${x} ${y1}C${x - bow} ${y1} ${x - bow} ${y2} ${x} ${y2}`
+      } else {
+        const x1 = s.x + NW, y1 = s.y + NH / 2, x2 = t.x, y2 = t.y + NH / 2
+        d = `M${x1} ${y1}C${x1 + GX / 2} ${y1} ${x2 - GX / 2} ${y2} ${x2} ${y2}`
+      }
+      const p = svgEl('path')
+      p.setAttribute('d', d)
+      p.setAttribute('class', 'edge edge--block')
+      p.setAttribute('marker-end', 'url(#arrow)')
+      svg.appendChild(p)
+    }
+  }
+  field.appendChild(svg)
+
+  for (const l of labels) {
+    const n = el('div', 'graph__label', l.text)
+    n.style.left = PAD + 'px'
+    n.style.top = l.y + 'px'
+    field.appendChild(n)
+  }
+  for (const [id, p] of pos) {
+    const i = byId.get(id)
+    if (!i) continue
+    const n = el(
+      'button',
+      'gnode' +
+        (groupIds.has(id) ? ' gnode--epic' : '') +
+        (i.status === 'closed' ? ' gnode--closed' : '') +
+        (task === id ? ' is-open' : ''),
+    )
+    n.type = 'button'
+    n.style.left = p.x + 'px'
+    n.style.top = p.y + 'px'
+    const row = el('div', 'gnode__row')
+    row.appendChild(el('span', 'light' + (i.column === 'todo' ? '' : ' light--' + i.column)))
+    row.appendChild(el('span', 'gnode__title', i.title))
+    n.appendChild(row)
+    const meta = el('div', 'gnode__meta')
+    meta.appendChild(el('span', null, i.id.split('-').pop() + ' · P' + i.priority))
+    const g = data.groups.find((x) => x.id === id)
+    if (g) meta.appendChild(el('span', null, `${g.doneCount}/${g.childCount}`))
+    if (i.blockedBy.length) meta.appendChild(el('span', 'gnode__wait', 'ждёт ' + i.blockedBy.length))
+    n.appendChild(meta)
+    n.title = i.title
+    n.onclick = () => openTask(id)
+    field.appendChild(n)
+  }
+
+  const legend = el('div', 'graph__legend')
+  const key = (sample, text) => {
+    const k = el('span', 'graph__key')
+    k.innerHTML = sample
+    k.appendChild(el('span', null, text))
+    return k
+  }
+  legend.appendChild(
+    key('<svg viewBox="0 0 22 8" aria-hidden="true"><path d="M1 4h20" style="stroke:var(--hairline-strong)" stroke-width="1.5" fill="none"/></svg>', 'эпик → дети'),
+  )
+  legend.appendChild(
+    key('<svg viewBox="0 0 22 8" aria-hidden="true"><path d="M1 4h15" style="stroke:var(--stop)" stroke-width="1.5" fill="none"/><path d="M15 1l6 3-6 3z" style="fill:var(--stop)"/></svg>', 'блокирует'),
+  )
+  box.appendChild(legend)
+  box.appendChild(field)
+}
+
 /* ── Documents ─────────────────────────────────────────────────── */
 
 const setGroup = (g) => {
@@ -230,6 +512,7 @@ const setGroup = (g) => {
   localStorage.setItem('beadshud.docGroup', g)
   $('by-dir').setAttribute('aria-pressed', String(g === 'dir'))
   $('by-epic').setAttribute('aria-pressed', String(g === 'epic'))
+  $('docs-seg').style.setProperty('--seg-i', g === 'dir' ? 0 : 1)
   renderDocs()
 }
 $('by-dir').onclick = () => setGroup('dir')
@@ -488,14 +771,14 @@ function openTask(id) {
   $('task-move').hidden = i.status === 'in_progress' || closed
   $('task-shut').textContent = closed ? 'Открыть заново' : 'Закрыть'
   body.scrollTop = 0
-  if (view === 'board') renderBoard()
+  if (view === 'board') renderTasks()
 }
 
 function closeTask() {
   if (!task) return
   task = null
   $('task').hidden = true
-  if (view === 'board') renderBoard()
+  if (view === 'board') renderTasks()
 }
 
 $('task-x').onclick = closeTask
@@ -588,7 +871,7 @@ async function load() {
   // this one's.
   waiting = true
   renderKinds()
-  renderBoard()
+  renderTasks()
 
   const get = (part) =>
     fetch(`/api/${part}?root=${encodeURIComponent(want)}`)
@@ -614,7 +897,7 @@ async function load() {
       sel = 'all'
     linkDocs()
     renderKinds()
-    renderBoard()
+    renderTasks()
     if (view === 'docs') renderDocs()
     if (task) data.issues.some((i) => i.id === task) ? openTask(task) : closeTask()
   })
@@ -678,6 +961,8 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
+setTaskView(taskView)
+setGroup(docGroup)
 await loadProjects()
 await load()
 // A refresh on a large workspace can take a minute; polling a hidden tab, or

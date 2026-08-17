@@ -17,9 +17,9 @@
 
 **Доска задач [beads](https://github.com/gastownhall/beads) и документов проекта на `localhost` — и строка статуса Claude Code, которая держит на неё живую ссылку.**
 
-<a href="https://www.npmjs.com/package/@roflochinsky/beads-hud"><img src="https://img.shields.io/npm/v/@roflochinsky/beads-hud?color=8b5cf6&label=npm" alt="npm" /></a>
-<img src="https://img.shields.io/badge/node-%E2%89%A522-8b5cf6" alt="Node ≥22" />
-<img src="https://img.shields.io/badge/license-MIT-8b5cf6" alt="MIT" />
+<a href="https://www.npmjs.com/package/@roflochinsky/beads-hud"><img src="https://img.shields.io/npm/v/@roflochinsky/beads-hud?color=0071e3&label=npm" alt="npm" /></a>
+<img src="https://img.shields.io/badge/node-%E2%89%A522-0071e3" alt="Node ≥22" />
+<img src="https://img.shields.io/badge/license-MIT-0071e3" alt="MIT" />
 
 <img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/board.png" alt="Доска задач beads-hud" width="100%" />
 
@@ -32,7 +32,7 @@
 beads-hud отвечает на оба и ставит ответ туда, куда вы и так смотрите:
 
 - **строка статуса** всегда на виду — сколько задач готово к работе, сколько ждут, сколько занято контекста и денег, и живая ссылка на доску;
-- **доска** по этой ссылке — задачи в четырёх колонках по статусу и все `.md` файлы проекта, читаемые и правимые на месте.
+- **доска** по этой ссылке — задачи доской, списком или графом связей, и все `.md` файлы проекта, читаемые и правимые на месте.
 
 Одно и другое нужны друг другу: строка знает, что доска поднята для этой папки, а хук поднимает её сам при старте сессии.
 
@@ -117,6 +117,10 @@ echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10}
 
 Слева — виды работ: все задачи, без эпика, эпики (каждый отдельной строкой), фичи, баги, верификация, прочее. Вид сам по себе является местом назначения: все баги в одном месте, все фичи в одном.
 
+Над доской — переключатель: **доска**, **список**, **граф**. Список — таблица с сортировкой по любой колонке: статус, id, тип, приоритет, эпик, кого ждёт, когда обновлена. Граф — карта связей всего проекта: дерево эпиков с детьми и красные стрелки блокировок поверх, обе связи beads на одном экране.
+
+<img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/graph.png" alt="Граф: дерево эпиков и стрелки блокировок" width="100%" />
+
 ### Документы
 
 <img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/docs.png" alt="Документы канбаном по папкам" width="100%" />
@@ -127,7 +131,7 @@ echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10}
 
 <img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/read.png" alt="Чтение документа" width="100%" />
 
-Документ открывается с человеческой типографикой — засечные заголовки, колонка не шире 780px, таблицы, код, цитаты, картинки.
+Документ открывается с человеческой типографикой — колонка не шире 760px, таблицы, код, цитаты, картинки.
 
 Правится он на месте: клик по абзацу превращает его в исходный markdown.
 
@@ -136,11 +140,11 @@ echo '{"model":{"display_name":"Opus 5"},"context_window":{"used_percentage":10}
 `Ctrl+Enter` сохраняет, `Esc` отменяет, пустая правка удаляет абзац. Всё, что вне правимого абзаца, остаётся в файле байт в байт: сервер режет документ на блоки со смещениями и вклеивает правку по ним.
 
 <details>
-<summary><strong>Светлая тема</strong></summary>
+<summary><strong>Тёмная тема</strong></summary>
 
-Тёмная по умолчанию, светлая по кнопке внизу рейки. Обе собраны из одного набора токенов.
+Светлая по умолчанию, тёмная по кнопке внизу рейки. Обе собраны из одного набора токенов.
 
-<img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/board-light.png" alt="Светлая тема" width="100%" />
+<img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/board-dark.png" alt="Тёмная тема" width="100%" />
 
 </details>
 
@@ -226,7 +230,7 @@ beads-hud            # или: node /путь/к/beads-hud/server.mjs
 > [!WARNING]
 > В нативной Windows строка статуса работать не будет — `beads-hud-statusline` это shell-скрипт. Доска и сервер работают везде, где есть Node.
 
-В рантайме одна зависимость — `marked`. Шрифты лежат в `public/fonts` и раздаются локально, интернет не нужен: **Golos Text** на интерфейс, **Source Serif 4** на заголовки и чтение, **JetBrains Mono** на идентификаторы и код.
+В рантайме одна зависимость — `marked`. Шрифты лежат в `public/fonts` и раздаются локально, интернет не нужен: **Inter** на интерфейс (ближайшая свободная замена SF Pro с кириллицей), **JetBrains Mono** на идентификаторы и код.
 
 ## Известное ограничение
 

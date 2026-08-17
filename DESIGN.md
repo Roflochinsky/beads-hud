@@ -1,433 +1,280 @@
 ---
 name: beads-hud
-description: Локальная консоль для мышления — задачи и документы на одном точечном холсте
+description: A macOS Liquid Glass desktop for reading a project — floating glass slabs over an aurora wallpaper, one Apple-blue tint, status carried by small coloured lamps.
 colors:
-  ground: "#0b0b0e"
-  rail: "#08080b"
-  bar: "#0e0e13"
-  panel: "#101016"
-  card: "#16161c"
-  raise: "#1c1c24"
-  sunk: "#0d0d11"
-  line: "#24242e"
-  edge: "#333341"
-  dots: "#ffffff0f"
-  text: "#e7e7ef"
-  dim: "#a8a8b8"
-  faint: "#8a8a9b"
-  accent: "#8b5cf6"
-  accent-lift: "#9d78f8"
-  accent-soft: "#8b5cf61f"
+  apple-blue: "#0071e3"
+  apple-blue-lift: "#005bb8"
+  accent-ink: "#0064d2"
   on-accent: "#ffffff"
-  ok: "#3fb950"
-  work: "#d8a132"
-  stop: "#f2665a"
-  idle: "#6b6b7c"
-  ok-soft: "#3fb9501f"
-  work-soft: "#d8a1321f"
-  stop-soft: "#f2665a1f"
-  idle-soft: "#6b6b7c1f"
+  accent-tint: "rgba(0,113,227,.12)"
+  ink: "#1c1c22"
+  slate-dim: "#494d61"
+  slate-faint: "#5b5e72"
+  glass-chrome: "rgba(255,255,255,.5)"
+  glass-reading: "rgba(255,255,255,.66)"
+  glass-panel: "rgba(255,255,255,.32)"
+  card-white: "rgba(255,255,255,.74)"
+  raise-white: "rgba(255,255,255,.92)"
+  sunk-well: "rgba(70,80,130,.07)"
+  hairline: "rgba(30,35,70,.1)"
+  hairline-strong: "rgba(30,35,70,.2)"
+  wall-sky: "#a4c4fa"
+  wall-lavender: "#dcc0f6"
+  wall-pink: "#f7bcd4"
+  wall-mint: "#a9e4cd"
+  ok-text: "#188038"
+  work-text: "#b25000"
+  stop-text: "#d70015"
+  idle-text: "#6e6e7a"
+  ok-lamp: "#2eb84e"
+  work-lamp: "#ff9500"
+  stop-lamp: "#ff3b30"
+  idle-lamp: "#98989f"
 typography:
   display:
-    fontFamily: "Source Serif, Georgia, serif"
-    fontSize: "36px"
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
+    fontSize: "30px"
     fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: "-0.012em"
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   headline:
-    fontFamily: "Source Serif, Georgia, serif"
-    fontSize: "27px"
-    fontWeight: 600
-    lineHeight: 1.22
-    letterSpacing: "-0.012em"
-  section:
-    fontFamily: "Source Serif, Georgia, serif"
-    fontSize: "24px"
-    fontWeight: 600
-    lineHeight: 1.25
-    letterSpacing: "-0.012em"
-  subsection:
-    fontFamily: "Source Serif, Georgia, serif"
-    fontSize: "18.5px"
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
+    fontSize: "22px"
     fontWeight: 600
     lineHeight: 1.3
-    letterSpacing: "-0.012em"
-  card-title:
-    fontFamily: "Source Serif, Georgia, serif"
-    fontSize: "14.5px"
+    letterSpacing: "-0.02em"
+  title:
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
+    fontSize: "17px"
     fontWeight: 600
     lineHeight: 1.3
-  prose:
-    fontFamily: "Golos, system-ui, -apple-system, sans-serif"
-    fontSize: "15.5px"
-    fontWeight: 400
-    lineHeight: 1.75
+    letterSpacing: "-0.01em"
   body:
-    fontFamily: "Golos, system-ui, -apple-system, sans-serif"
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.5
-  task-title:
-    fontFamily: "Golos, system-ui, -apple-system, sans-serif"
-    fontSize: "13.5px"
-    fontWeight: 500
-    lineHeight: 1.42
-  control:
-    fontFamily: "Golos, system-ui, -apple-system, sans-serif"
-    fontSize: "13px"
-    fontWeight: 500
-  meta:
-    fontFamily: "Golos, system-ui, -apple-system, sans-serif"
-    fontSize: "11.5px"
+  reading:
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
+    fontSize: "15px"
     fontWeight: 400
+    lineHeight: 1.75
   label:
-    fontFamily: "Golos, system-ui, -apple-system, sans-serif"
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 600
     letterSpacing: "0.06em"
   mono:
-    fontFamily: "JetBrains Mono, ui-monospace, monospace"
-    fontSize: "11px"
+    fontFamily: "'JetBrains Mono', ui-monospace, monospace"
+    fontSize: "12px"
     fontWeight: 400
     letterSpacing: "-0.01em"
-  editor:
-    fontFamily: "JetBrains Mono, ui-monospace, monospace"
-    fontSize: "13.5px"
-    fontWeight: 400
-    lineHeight: 1.7
 rounded:
-  focus: "4px"
-  inner: "5px"
-  control: "7px"
-  card: "10px"
-  dialog: "14px"
-  pill: "20px"
+  in: "10px"
+  card: "14px"
+  panel: "22px"
+  slab: "26px"
+  pill: "999px"
 spacing:
-  xs: "4px"
-  sm: "6px"
-  md: "8px"
-  lg: "10px"
-  xl: "12px"
-  gutter: "14px"
-  section: "18px"
-  view: "22px"
-  drawer: "28px"
-  read-top: "44px"
+  gap: "12px"
+  bar-h: "52px"
+  rail-w: "60px"
 components:
-  button-primary:
-    backgroundColor: "{colors.accent}"
+  button-accent:
+    backgroundColor: "{colors.apple-blue}"
     textColor: "{colors.on-accent}"
-    typography: "{typography.control}"
-    rounded: "{rounded.control}"
-    padding: "6px 11px"
-  button-primary-hover:
-    backgroundColor: "{colors.accent-lift}"
-    textColor: "{colors.on-accent}"
+    rounded: "{rounded.pill}"
+    padding: "7px 15px"
+  button-accent-hover:
+    backgroundColor: "{colors.apple-blue-lift}"
   button-default:
-    backgroundColor: "{colors.card}"
-    textColor: "{colors.text}"
-    typography: "{typography.control}"
-    rounded: "{rounded.control}"
-    padding: "6px 11px"
+    backgroundColor: "{colors.card-white}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.pill}"
+    padding: "7px 15px"
   button-default-hover:
-    backgroundColor: "{colors.raise}"
-    textColor: "{colors.text}"
+    backgroundColor: "{colors.raise-white}"
   button-quiet:
     backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    typography: "{typography.control}"
-    rounded: "{rounded.control}"
-    padding: "6px 11px"
-  icon-button:
-    backgroundColor: "transparent"
-    textColor: "{colors.faint}"
-    rounded: "{rounded.control}"
-    height: "28px"
-    width: "28px"
-  card-task:
-    backgroundColor: "{colors.card}"
-    textColor: "{colors.text}"
-    typography: "{typography.task-title}"
+    textColor: "{colors.slate-dim}"
+    rounded: "{rounded.pill}"
+    padding: "7px 15px"
+  button-quiet-hover:
+    backgroundColor: "{colors.sunk-well}"
+    textColor: "{colors.ink}"
+  chip:
+    backgroundColor: "{colors.sunk-well}"
+    textColor: "{colors.slate-dim}"
+    rounded: "{rounded.pill}"
+    padding: "4px 10px"
+  card:
+    backgroundColor: "{colors.card-white}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.card}"
     padding: "11px 13px 10px"
-  card-task-hover:
-    backgroundColor: "{colors.raise}"
-  card-doc:
-    backgroundColor: "{colors.card}"
-    textColor: "{colors.text}"
-    typography: "{typography.card-title}"
-    rounded: "{rounded.card}"
-    padding: "12px 13px"
-  status-light:
-    backgroundColor: "{colors.idle}"
-    rounded: "{rounded.pill}"
-    size: "7px"
-  chip:
-    backgroundColor: "{colors.sunk}"
-    textColor: "{colors.dim}"
-    typography: "{typography.meta}"
-    rounded: "{rounded.pill}"
-    padding: "3px 9px"
-  count-pill:
-    backgroundColor: "{colors.sunk}"
-    textColor: "{colors.faint}"
-    typography: "{typography.mono}"
-    rounded: "{rounded.pill}"
-    padding: "1px 7px"
+  card-hover:
+    backgroundColor: "{colors.raise-white}"
   input-field:
-    backgroundColor: "{colors.sunk}"
-    textColor: "{colors.text}"
-    typography: "{typography.body}"
-    rounded: "{rounded.control}"
-    padding: "9px 11px"
-  rail-tab:
-    backgroundColor: "transparent"
-    textColor: "{colors.faint}"
-    rounded: "{rounded.control}"
-    height: "36px"
-    width: "36px"
-  rail-tab-active:
-    backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.text}"
-  nav-item:
-    backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    typography: "{typography.control}"
-    rounded: "{rounded.control}"
-    padding: "6px 8px"
-  nav-item-active:
-    backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.text}"
-  segmented-button:
-    backgroundColor: "transparent"
-    textColor: "{colors.dim}"
-    rounded: "{rounded.inner}"
-    padding: "5px 10px"
-  segmented-button-active:
-    backgroundColor: "{colors.card}"
-    textColor: "{colors.text}"
-  dialog:
-    backgroundColor: "{colors.panel}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.dialog}"
-    padding: "22px"
-    width: "min(440px, calc(100vw - 32px))"
-  drawer:
-    backgroundColor: "{colors.panel}"
-    textColor: "{colors.text}"
-    padding: "26px 28px 60px"
-    width: "min(560px, 46vw)"
-  toast:
-    backgroundColor: "{colors.panel}"
-    textColor: "{colors.text}"
-    typography: "{typography.control}"
-    rounded: "{rounded.card}"
-    padding: "11px 14px"
-  block-editor:
-    backgroundColor: "{colors.sunk}"
-    textColor: "{colors.text}"
-    typography: "{typography.editor}"
-    rounded: "{rounded.control}"
-    padding: "10px 12px"
+    backgroundColor: "{colors.sunk-well}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.in}"
+    padding: "9px 12px"
 ---
 
 # Design System: beads-hud
 
 ## Overview
 
-**Creative North Star: "Ночной пульт"**
+**Creative North Star: "The Liquid Glass Desk"**
 
-beads-hud выглядит как консоль развёртывания, но развёртывает не сервисы, а мышление. Экран почти чёрный с холодным фиолетовым подтоном, земля под карточками — точечная решётка, и каждая карточка на этой земле является живой единицей со своей лампой состояния. Плоский список документов и трекер на белой странице — две вещи, которые эта категория отгружает по умолчанию и от которых сборка отказалась осознанно.
+beads-hud is a macOS Liquid Glass promo scene turned into a working surface. The ground is an aurora wallpaper — four soft radial pools of sky blue, lavender, pink, and mint over a pale linear wash — and everything the user touches is a floating glass slab hovering above it: a capsule rail on the left, a capsule toolbar above, translucent columns, a frosted drawer. Nothing is edge-to-edge; every layer keeps a 12px air gap from the viewport and from its neighbours. The world is calm, light-first, and deliberately Apple: one blue tint, capsule controls, specular top edges, and status told by tiny coloured lamps rather than coloured panels.
 
-Плотность двойная и это намеренно. Слева и сверху — навигационный слой, где 11–13px, 7px радиусы и однопиксельные волоски позволяют держать весь проект в одном взгляде. В центре чтения — полоса в 780px, кегль 15.5px и интерлиньяж 1.75, в которой можно просидеть десять минут. Переход между этими плотностями отмечен материально: рабочий холст точечный, читальня — сплошная.
-
-Мир тихий. Движение почти отсутствует: 0.12s на цвет и границу при наведении, одно появление тоста на 0.3s, и всё. Цвет тоже тихий: интерфейс состоит из семи оттенков почти-чёрного, единственный фиолетовый зарезервирован за главным действием, а состояние несёт лампа 7px, а не заливка. Светлая тема существует, но это исключение, которое пользователь просит вручную.
+The build refuses the category defaults it was directed against: no opaque white tracker page, no edge-to-edge sidebar. Depth comes from the material itself — backdrop blur and saturation over the colorful wallpaper — so the palette of the interface is mostly white-at-varying-opacity, and the wallpaper supplies all the colour a screen needs. The dark scene exists only behind a manual toggle; it swaps the wallpaper to deep night hues and the glass to smoked panes, but changes no geometry and no accent hue.
 
 **Key Characteristics:**
-- Тёмное по умолчанию, светлое — по явному переключателю, без ветки по системной теме
-- Точечная земля (решётка 22px) под работой, сплошная — под чтением
-- Один фиолетовый `--accent` на главное действие, выбор и фокус; больше нигде
-- Состояние — лампа 7px с мягким кольцом 3px, никогда не заливка карточки
-- Три самостоятельные гарнитуры: сериф на именах, Golos на речи интерфейса, моно на машинных строках
-- Одна граница в 1px и лестница радиусов 5/7/10/14/20
-- Тени двухступенчатые и рассеянные: `--shadow` на карточках, `--lift` на плавающих слоях
+- Floating glass slabs over an aurora wallpaper; 12px gaps, never edge-to-edge
+- One tint (Apple blue #0071e3); all other colour is wallpaper or status lamps
+- Capsule controls everywhere; concentric radius ladder 10/14/22/26
+- Light is the surface; dark is a manual exception, never an OS preference
+- Russian UI voice speaking bd's own vocabulary; machine strings in monospace
 
 ## Colors
 
-Палитра — семь ступеней почти-чёрного с холодным фиолетовым подтоном, четыре сигнальных цвета и ровно один акцент.
+The interface itself is nearly colourless — white glass at graded opacities over a four-hue wallpaper — with a single blue tint and a small family of status lamps.
 
 ### Primary
-- **Консольный фиолетовый** (`--accent`): единственный акцент. Точка проекта в крошке (круг 11px сплошной заливки), главная кнопка «Новая задача», активная вкладка рейла и активный вид работ (через `--accent-soft` с полноцветной границей), обводка открытой карточки, граница поля в фокусе, рамка редактируемого блока, контур цели при перетаскивании, ссылки в прозе. Больше нигде.
-- **Фиолетовый на подъёме** (`--accent-lift`): только состояние `:hover` главной кнопки. В светлой теме тон уходит темнее (`#5c2ed2`), а не светлее — на белом подъём читается как углубление.
-- **Фиолетовая дымка** (`--accent-soft`): 12% заливка под выбранным пунктом навигации; всегда идёт в паре с границей `--accent`, потому что сама по себе неразличима.
-
-### Secondary — сигнальные
-Четыре цвета состояния, каждый со своим 12% двойником для кольца лампы.
-- **Зелёный закрытия** (`--ok`): колонка «Закрыто», лампа закрытой задачи, счётчик задач у документа.
-- **Янтарь работы** (`--work`): колонка «В работе», лампа взятой задачи.
-- **Красный упора** (`--stop`): колонка «Заблокировано», лампа блокировки, метка «ждёт N», приоритет P0, текст ошибки, граница ошибочного тоста.
-- **Серый покоя** (`--idle`): колонка «Открыто» и документ, на который не ссылается ни одна задача. Покой — тоже состояние и у него есть своя лампа.
+- **Apple Blue** (#0071e3): the only tint in the product. Fills the primary capsule button, the selection ring on open cards, focus outlines, drag-target dashes, and the project dot. `apple-blue-lift` (#005bb8) is its hover state; **Accent Ink** (#0064d2) is the same voice for text and links, dark enough to read on glass. The selection wash `accent-tint` (rgba(0,113,227,.12)) marks the current rail tab and kind.
 
 ### Neutral
-- **Земля** (`--ground`): фон всего окна и холста, на него ложится точечная решётка.
-- **Рейл** (`--rail`): самая тёмная поверхность, только левая полоса иконок. Темнее земли, чтобы навигация уходила назад.
-- **Планка** (`--bar`): верхняя крошка и полоса чтения.
-- **Панель** (`--panel`): вид работ, правая панель задачи, диалог, тост — всё, что является отдельным слоем.
-- **Карточка** (`--card`): единственная поверхность содержимого; она же эталон, против которого измерен контраст текста.
-- **Подъём** (`--raise`): наведение на карточку, кнопку, пункт навигации и абзац в чтении.
-- **Углубление** (`--sunk`): вдавленное — поля ввода, счётчики-пилюли, чипы, блоки кода, редактор блока.
-- **Волосок** (`--line`): единственная разделительная линия системы, 1px.
-- **Кромка** (`--edge`): та же линия при наведении и на плавающих слоях; она же цвет зачёркивания закрытой задачи.
-- **Текст** (`--text`), **приглушённый** (`--dim`), **едва слышный** (`--faint`): три ступени речи — содержимое, вторичное, служебное.
-- **Точки** (`--dots`): 6% белого, вся видимость земли.
+- **Ink** (#1c1c22): primary text everywhere.
+- **Cool Slate Dim** (#494d61) and **Cool Slate Faint** (#5b5e72): secondary and tertiary text. Deliberately slate, not gray — tinted toward the wallpaper's cool temperature — and dark enough to hold ≥4.5:1 on the translucent surfaces over the wallpaper's warm quadrants.
+- **Glass Chrome** (rgba(255,255,255,.5)): the standard slab material for rail, toolbar, and segmented controls.
+- **Glass Reading** (rgba(255,255,255,.66)): the stronger pane for the table, reading view, drawer, dialog, and toast.
+- **Glass Panel** (rgba(255,255,255,.32)): the lightest pane, for board columns and the graph field.
+- **Card White** (rgba(255,255,255,.74)) and **Raise White** (rgba(255,255,255,.92)): the most opaque layer, for cards and their hover state.
+- **Sunk Well** (rgba(70,80,130,.07)): the recessed fill for hover wells, chips, code, and inputs.
+- **Hairlines** (rgba(30,35,70,.1) / .2): dividers and quiet borders.
+- **Wallpaper** — Sky (#a4c4fa), Lavender (#dcc0f6), Pink (#f7bcd4), Mint (#a9e4cd): the aurora ground, painted as radial gradients on `body`. Never used as component fills.
 
-### Светлая тема
-Светлая тема — не вторая палитра, а тот же набор имён с другими значениями на `:root[data-theme='light']`: земля `#f6f6f8`, карточка `#fff`, волосок `#e2e2ea`, текст `#191922`, акцент `#6d3ee0`, сигнальные тона уходят в тёмные версии (`#1a7f37`, `#9a6700`, `#c4362b`), мягкие двойники — с 8% вместо 12%, тени легчают вдвое. Ни один компонент не знает о теме: все они написаны на именах.
+### Status
+- Text variants, accessible on glass: **OK** (#188038), **Work** (#b25000), **Stop** (#d70015), **Idle** (#6e6e7a).
+- Lamp variants, vivid Apple system colors: **OK Lamp** (#2eb84e), **Work Lamp** (#ff9500), **Stop Lamp** (#ff3b30), **Idle Lamp** (#98989f). Lamps are 8px dots with a 3px halo of the same hue at 22%.
 
 ### Named Rules
-**Правило одного фиолетового.** `--accent` обозначает намерение: главное действие, текущий выбор, фокус, открытую карточку. Он никогда не обозначает состояние и никогда не заливает поверхность больше кнопки. В верхней полосе он звучит дважды — точка проекта слева, главное действие справа — и это предел зоны.
+**The One Tint Rule.** Apple blue is the only interface tint. Every other hue on screen is either the wallpaper or a status lamp. No second accent, ever.
 
-**Правило измеренного пола.** `--faint` и `--dim` заданы измерением 4.5:1 против `--card` в каждой теме, а не на глаз (в тёмной `--faint` даёт 5.31:1, в светлой 5.13:1). Любая новая ступень серого проходит то же измерение до того, как получит имя.
-
-**Правило лампы.** Состояние несёт круг 7px с кольцом 3px в 12% того же цвета. Карточка при этом остаётся `--card` в любом состоянии: цвет статуса нельзя разливать по поверхности, по границе или по заголовку.
-
-**Правило тёмного по умолчанию.** Тёмное живёт на `:root`, светлое — на `[data-theme='light']` и включается только руками. Ветки `prefers-color-scheme` в системе нет и не должно быть: консоль читают ночью рядом с тёмным терминалом.
+**The Lamps Are Graphics Rule.** Status colour splits into two token families: vivid `*-lamp` values for the 8px dots (graphics), and darker `ok/work/stop/idle` values for any status-coloured text (must hold 4.5:1). Never put a lamp colour on text.
 
 ## Typography
 
-**Display Font:** Source Serif 4 (Georgia, serif) — self-hosted, 400/600, с кириллическим подмножеством
-**Body Font:** Golos Text (system-ui, sans-serif) — self-hosted, 400/500/600, с кириллическим подмножеством
-**Label/Mono Font:** JetBrains Mono (ui-monospace) — self-hosted, 400/500, с кириллическим подмножеством
+**UI Font:** Inter (with -apple-system, system-ui fallback) — self-hosted woff2, weights 400/500/600, latin + cyrillic subsets
+**Mono Font:** JetBrains Mono (with ui-monospace fallback) — weights 400/500
 
-**Character:** Сериф говорит имена — заголовок документа, заголовок задачи, название раздела; он придаёт консоли редакторскую серьёзность, которой нет у трекеров. Golos говорит всё, что произносит сам интерфейс: он нейтрален и одинаково спокоен в кириллице и латинице. Моно говорит машинными строками — идентификаторы, счётчики, пути, код и исходник markdown под правкой; там, где текст пришёл из `bd` или из файла, форма это признаёт.
+**Character:** Inter is the deliberate closest-obtainable stand-in for SF Pro (which is not redistributable, and the Russian UI needs full Cyrillic); JetBrains Mono stands in for SF Mono. The pairing reads as a native macOS app that happens to speak Russian.
 
 ### Hierarchy
-- **Display** (Source Serif, 600, 36px/1.15, −0.012em): заголовок документа в чтении; на узком экране 27px. Единственный кегль этого размера во всём продукте.
-- **Headline** (Source Serif, 600, 27px/1.22): заголовок задачи в правой панели. Рядом — заголовок вида (26px/1.2) и заголовок диалога (20px/1.2) на той же гарнитуре.
-- **Section / Subsection** (Source Serif, 600, 24px/1.25 и 18.5px): h2 и h3 внутри документа.
-- **Prose** (Golos, 400, 15.5px/1.75): абзацы и списки документа, полоса не шире 780px. Проза набрана интерфейсной гарнитурой, а не серифом, — сериф в этой системе именует, но не рассказывает.
-- **Card title** (Source Serif, 600, 14.5px/1.3): заголовок карточки документа — самый мелкий сериф системы и её нижняя граница.
-- **Body** (Golos, 400, 14px/1.5): базовый кегль интерфейса и текст описания задачи (14px/1.7).
-- **Task title** (Golos, 500, 13.5px/1.42): заголовок карточки задачи; у закрытой — `--dim` и зачёркивание цветом `--edge`.
-- **Control** (Golos, 500, 13px): кнопки, пункты навигации, связи в панели. Плотная ступень 12.5px — имя колонки (600) и сегментированный переключатель.
-- **Meta** (Golos, 400, 11.5–12px): подвал карточки, чипы, путь в полосе чтения, подсказки.
-- **Label** (Golos, 600, 11px, +0.06em, uppercase): подпись группы в рейле видов и подпись блока в панели задачи. Это подпись поля, а не рубрика.
-- **Mono** (JetBrains Mono, 400/500, 11–13px, −0.01em): идентификаторы задач, счётчики, приоритет, пути файлов, `code`; редактор блока — 13.5px/1.7.
+- **Display** (600, 30px, 1.2, -0.02em): reading-view h1 only; drops to 24px under 860px.
+- **Headline** (600, 22px, 1.3, -0.02em): the task title in the drawer; `text-wrap: balance`.
+- **Title** (600, 17px, 1.3, -0.01em): view titles and dialog headings.
+- **Body** (400, 14px, 1.5): the base set on `body`. Cards and controls run slightly denser at 13–13.5px, weight 500 for titles and button labels.
+- **Reading** (400, 15px, 1.75): document prose, in a centered column of max 760px with 40px padding.
+- **Label** (600, 11px, 0.06em, uppercase): section labels in the kind rail, table headers, drawer section heads, graph group labels — always in `slate-faint`.
+- **Mono** (400–500, 10.5–12px, -0.01em): every machine string — issue ids, counts, priorities (P0–P4), file paths, dates, task types — matching bd's terminal output.
 
 ### Named Rules
-**Правило трёх гарнитур.** Сериф — только имена (заголовки документов, задач, разделов, диалогов). Golos — всё, что произносит интерфейс, включая прозу документа. Моно — только то, что напечатала машина: id, счётчики, пути, код, исходник markdown. Гарнитура здесь сообщает происхождение текста.
+**The Speak-bd Rule.** Statuses and UI copy are bd's vocabulary in Russian; task types (`task`, `feature`, `bug`, `epic`) and ids stay latin and monospace. If bd prints it, the HUD prints it the same way.
 
-**Правило нижней границы серифа.** Сериф не опускается ниже 14.5px и не берёт вес меньше 600. Мелкий сериф в тёмной теме мылится и перестаёт отличаться от Golos, а вместе с этим исчезает и смысл различения.
-
-**Правило меры.** Полоса чтения — `min(780px, 100%)`, заголовку дают больше воздуха сверху (1.5em), чем снизу (0.1em): заголовок принадлежит тому, что под ним.
-
-**Правило словаря beads.** Интерфейс говорит по-русски словами `bd`: «открыто», «в работе», «заблокировано», «закрыто». Типы задач (`task`, `feature`, `bug`, `epic`) остаются латиницей и моноширинными, потому что именно так их печатает `bd`; переводить их — значит заводить второй словарь.
+**The Machine-String Rule.** Anything a terminal would print — id, count, path, date, priority — is set in JetBrains Mono at 10.5–12px. Prose never goes mono; machine strings never go Inter.
 
 ## Layout
 
-Каркас фиксированный и трёхчастный: рейл иконок 56px слева, полоса крошки 48px сверху, всё остальное — холст. Холст (`.canvas`) — flex-строка: панель видов работ 228px и рабочая область, которая либо разворачивается в колонки, либо становится читальней. Правая панель задачи — фиксированный слой `min(560px, 46vw)`, диалог — центрированный `min(440px, calc(100vw − 32px))`.
+The viewport is a fixed desktop scene, `overflow: hidden` on body. Slabs are position-fixed with a shared **12px gap** (`--gap`) between each slab and the viewport edge: a 60px-wide capsule rail on the left (radius = half its width), a 52px toolbar across the top (fully capsule), and the canvas filling the remainder as a flex row. Inside the canvas: a 232px kind rail, then the active view. Board columns flex between 242px and 360px (basis 268px) and scroll internally; the board scrolls horizontally when columns overflow. The task drawer floats over the right edge at min(560px, 46vw), top-aligned under the toolbar. Density is compact throughout — 8px card gaps, 10px column padding, 13px control type.
 
-Доска — горизонтальный скролл-ряд колонок с зазором 14px; колонка гибкая (`1 1 264px`), но не уже 238px и не шире 360px, а карточки внутри идут стопкой с зазором 9px. Когда группа документов ровно одна, ряд колонок вырождается и заменяется сеткой `repeat(auto-fill, minmax(272px, 1fr))`: одна колонка — это не доска, а четыре пятых пустого холста.
+Responsive is three honest steps, not a mobile redesign: at 1080px the kind rail and drawer narrow; at 860px the canvas stacks (kind rail becomes a wrapping horizontal band, drawer goes full-width); at 640px button and segment labels fold into their icons (the control keeps its place), the status word yields to the lamp, and the rail slims to 48px.
 
-Ритм отступов кратен двум и держится на десяти ступенях: 4 и 6 — внутри управляющих элементов, 8 и 10 — между родственными элементами, 12–14 — внутри карточек и между колонками, 18 — верх доски, 22 — поля вида и диалога, 28 — поля панели задачи, 44 — воздух над заголовком документа. Читальня добавляет снизу 30vh, чтобы последний абзац можно было поднять к центру экрана.
-
-Три ступени сужения. До 1080px панель видов ужимается до 190px, панель задачи — до 62vw. До 820px холст встаёт колонкой: виды работ ложатся горизонтальной лентой не выше 34vh, панель задачи занимает всю ширину, поля читальни падают до 20px. До 600px у главной кнопки сворачивается подпись, но не место: кнопка остаётся там же, в правом верхнем углу, только становится иконкой.
-
-### Named Rules
-**Правило точечной земли.** Рабочий холст всегда несёт решётку `radial-gradient(circle at 1px 1px, var(--dots) 1px, transparent 0)` с шагом 22px. Читальня её снимает и берёт сплошную землю — так переход от работы к чтению чувствуется материалом, а не только шириной колонки.
-
-**Правило неподвижного действия.** Главное действие не переезжает и не прячется в меню при сужении. Сжимается его подпись, не его место.
+**The Floating Slab Rule.** No chrome surface ever touches the viewport edge or another slab; the 12px wallpaper gap between layers is part of the material.
 
 ## Elevation & Depth
 
-Система тональная в первую очередь и теневая во вторую. Глубина набирается семью ступенями почти-чёрного: `--rail` уходит назад, `--ground` держит середину, `--card` выступает, `--raise` отзывается на курсор, `--sunk` вдавливается. Тень только подтверждает то, что уже сказано тоном, и потому она рассеянная, без цветного оттенка и всегда двухсоставная (близкий контактный слой плюс дальний мягкий). Модальный слой добавляет к этому единственное затемнение: `color-mix(in srgb, var(--ground) 72%, transparent)` с `backdrop-filter: blur(2px)` — гасит не чёрным, а собственной землёй мира, поэтому в светлой теме оно работает тем же правилом.
+Depth is material, not shadow-stacked: the primary depth cue is backdrop blur + saturation revealing the wallpaper through each pane, plus a 1px specular top edge that reads as light hitting glass. Shadows exist but are soft and supporting.
 
 ### Shadow Vocabulary
-- **Контакт** (`--shadow`: `0 1px 2px #00000059, 0 4px 14px -4px #0000006b`): карточки задач и документов, активная кнопка сегментированного переключателя. Отрывает содержимое от земли на один шаг.
-- **Подъём** (`--lift`: `0 12px 40px -12px #000000a6, 0 2px 8px #00000073`): только плавающие слои — панель задачи, диалог, тост.
-- **Кольцо открытия** (`box-shadow: var(--shadow), 0 0 0 1px var(--accent)`): открытая карточка удваивает границу вместо того, чтобы менять заливку.
-- **Кольцо лампы** (`box-shadow: 0 0 0 3px <status>-soft`): не глубина, а свечение; единственное применение тени как цвета.
+- **Rest** (`0 1px 2px rgba(20,25,60,.06), 0 10px 28px -10px rgba(20,25,60,.16)` = `--shadow`): every glass slab at rest.
+- **Lift** (`0 30px 80px -20px rgba(20,25,60,.4), 0 4px 16px rgba(20,25,60,.12)` = `--lift`): overlay layers only — drawer, dialog, toast.
+- **Specular** (`inset 0 1px 0 rgba(255,255,255,.75)` = `--specular`; .12 in dark): the signature 1px inner top highlight, applied to every glass slab, card, and button.
+- **Card** (`0 1px 3px rgba(20,25,60,.07), 0 6px 16px -8px rgba(20,25,60,.12)`): cards and graph nodes; deepens slightly on hover with a -1px translateY.
 
 ### Named Rules
-**Правило двух ступеней.** В системе ровно две высоты: содержимое (`--shadow`) и плавающий слой (`--lift`). Третьей ступени нет; если элементу нужна тень сильнее контактной — он на самом деле просится в плавающий слой.
+**The Blur-Lives-On-Panels Rule.** Backdrop-filter belongs to panels and chrome (blur 26–40px, saturate 1.6–1.8). Cards are the most opaque layer and carry no backdrop-filter of their own — dozens of cards must never each pay for a blur pass.
 
-**Правило рассеянной тени.** Все тени мягкие, с отрицательным spread на дальнем слое. Жёсткая смещённая тень без размытия не принадлежит этому миру.
+**The Paper Rule.** Glass is chrome; a document is paper. Dense reading surfaces — table rows, the reading view — take near-opaque fields (`glass-reading` and above) so long text never fights the wallpaper.
+
+**The Specular Edge Rule.** Every glass slab gets the 1px inset top highlight. A pane without its specular edge is not this world's glass.
 
 ## Shapes
 
-Форма прямоугольная, углы скруглены по лестнице из пяти ступеней: 5px — вложенное внутрь уже скруглённого (кнопка сегмента, `code`), 7px — управляющие элементы (кнопки, поля, пункты навигации, блок под правкой), 10px — карточки, панели, тост, блок кода, изображение, 14px — диалог как самый верхний слой, 20px — пилюли (чип, счётчик). Обводка фокуса — 2px `--accent` с отступом 2px и радиусом 4px, одна на весь продукт.
+Capsules and concentric rounded rectangles. Interactive controls — buttons, chips, segmented controls, counts, the rail and toolbar themselves — are full capsules (999px). Containers follow a concentric radius ladder: **10px** (`in`) for inputs, inline blocks, and nested list rows; **14px** (`card`) for cards, sheets, and graph nodes; **22px** (`panel`) for board columns, the table, and the graph field; **26px** (`slab`) for the outermost layers — kind rail, reading view, drawer, dialog. Borders are 1px throughout: glass panes take the bright glass edge (rgba(255,255,255,.62)), cards a near-white edge, dividers the dark hairline. Dashed 1px hairline-strong marks empty states and the add-block affordance; a dashed accent outline marks a drag target. Icons are a hand-drawn 20px stroke sprite (1.5px, round caps) — outline SVG, single colour via currentColor.
 
-Всё стоит на одной границе в 1px `--line`; при наведении она становится `--edge`, при открытии — `--accent`. Плавающие слои (диалог, тост) берут `--edge` сразу, потому что у них нет соседей, которые бы их держали.
-
-Пунктирная граница означает ровно одно: место, куда что-то можно положить. Пустая колонка, кнопка «добавить абзац», подсвеченная цель перетаскивания — все три пунктирные, и больше пунктир нигде не встречается.
-
-Иконки — собственные, нарисованные inline SVG в сетке 20×20 при обводке 1.5px с круглыми концами и стыками, сложенные в скрытый спрайт и вызываемые через `<use>`. Размеры два: 20px в рейле, 16px в тексте и кнопках. Заливки нет нигде, кроме половины луны в иконке темы.
+**The Capsule Ladder Rule.** If it's pressable and small, it's a capsule (999px); if it's a container, it takes the next radius up the 10/14/22/26 ladder so nested corners stay concentric.
 
 ## Components
 
 ### Buttons
-- **Shape:** мягкий прямоугольник 7px (`--r-sm`), высота задаётся вертикальным отступом 6px.
-- **Primary:** заливка `--accent`, граница того же цвета, текст `--on-accent`, 13px/500, отступы 6px 11px, иконка 16px слева. Ровно одна на экран.
-- **Default:** заливка `--card` на границе `--line`; наведение переводит фон в `--raise`, границу — в `--edge`.
-- **Quiet:** прозрачная, текст `--dim`, без границы; наведение даёт `--raise` и полный `--text`. Это форма для действий внутри панелей и полос.
-- **Icon-only:** 28×28, прозрачная, `--faint` → `--text` при наведении.
-- **Hover / Focus:** переходы 0.12s по фону, границе и цвету; фокус — общая обводка 2px `--accent` с отступом 2px. Заблокированная кнопка — 45% непрозрачности, без изменения цвета.
+- **Shape:** capsule (999px), 13px/500 label with optional 16px stroke icon.
+- **Primary (`button-accent`):** Apple blue fill, white text, blue glow shadow (`0 2px 10px -2px rgba(0,113,227,.5)`) plus a 25%-white specular inset; hover deepens to #005bb8. Exactly one per screen region (e.g. "Новая задача").
+- **Default:** card-white fill, 1px card edge, specular inset; hover raises to raise-white.
+- **Quiet:** transparent, dim text, no shadow; hover gets the sunk well.
+- **Icon button:** 30px circle, transparent, faint icon; hover sunk well + ink.
+- **Focus:** global `:focus-visible` — 2px Apple blue outline, 2px offset.
+- **Disabled:** opacity .45.
 
 ### Chips
-- **Style:** заливка `--sunk`, граница `--line`, радиус 20px, текст `--dim` 11.5px; внутри может стоять лампа состояния.
-- **State:** чипы описательные, а не переключаемые — они несут тип, приоритет, исполнителя и эпик задачи. Счётчик-пилюля устроен так же, но набран моно 11px цветом `--faint`.
+- **Style:** capsule, sunk-well fill, 11.5px dim text, optional 16px icon or lamp; no border. Used for task meta in the drawer; the same recipe at 11px mono makes count badges (`col__n`, `card__type`).
 
 ### Cards / Containers
-- **Corner Style:** 10px (`--r`).
-- **Background:** `--card`, при наведении `--raise`.
-- **Shadow Strategy:** `--shadow` (см. Elevation).
-- **Border:** 1px `--line`; наведение — `--edge`; открытая карточка — `--accent` плюс кольцо 1px. Перетаскиваемая карточка гаснет до 35%.
-- **Internal Padding:** 11px 13px 10px у карточки задачи, 12px 13px у карточки документа.
-- **Anatomy:** заголовок, затем подвал из типа-чипа, id моноширинным хвостом, приоритета и — если задача кого-то ждёт — красной метки с иконкой часов, прижатой вправо.
+- **Corner Style:** 14px (cards, sheets, graph nodes); 22px panels; 26px slabs.
+- **Background:** cards `card-white` (the opaque layer); columns `glass-panel` with blur 26 / saturate 1.7; chrome `glass-chrome` with blur 28 / saturate 1.8.
+- **Shadow Strategy:** rest shadow + specular; card hover lifts -1px with a deeper card shadow.
+- **Border:** 1px — glass edge on panes, card edge on cards.
+- **Internal Padding:** columns 10px; cards 11px 13px 10px; drawer body 24px 28px.
+- **States:** open card/row gets a 2px Apple-blue ring; dragging card fades to .35; closed tasks strike the title in dim with a hairline-strong line.
 
 ### Inputs / Fields
-- **Style:** вдавленное поле `--sunk` на границе `--line`, радиус 7px, отступы 9px 11px, подпись сверху 12px `--dim`.
-- **Focus:** граница переходит в `--accent`; собственная обводка снята, потому что граница уже сообщила состояние.
-- **Error:** сообщение под полем цветом `--stop` 12.5px; поле само не перекрашивается.
+- **Style:** sunk-well fill, transparent 1px border, 10px radius, 9px 12px padding; 12px dim label above.
+- **Focus:** border turns Apple blue (no glow).
+- **Error:** message line in `stop-text` at 12.5px.
 
 ### Navigation
-- **Icon rail:** полоса 56px на `--rail`, кнопки 36×36 с радиусом 7px, иконка `--faint`. Наведение — `--raise` и `--text`; текущий раздел — `--accent-soft` с границей `--accent`. Переключатель темы прижат к низу.
-- **Crumb bar:** проект выбирается `<select>` без стрелки системы (своя иконка 16px справа), 500-й вес, дальше разделитель «/» цветом `--edge` и имя вида цветом `--dim`. Строчная буква у имени вида намеренная: это часть пути, а не заголовок.
-- **Kind rail:** вертикальный список 13px цветом `--dim` с отступом 6px 8px и счётчиком моно справа; текущий — `--accent-soft`, граница `--accent`, вес 500. Дочерний эпик сдвинут отступом слева 22px и несёт счётчик вида `3/7`.
+- **Rail:** fixed 60px capsule of icon-only 40px round tabs; faint at rest, ink-on-sunk on hover, accent-ink-on-tint when current (`aria-current`). Theme toggle sits at the foot.
+- **Kind rail:** 232px glass slab; uppercase 11px group labels, 13px rows at 10px radius, mono counts right-aligned; current row takes tint + accent-ink; children indent 24px.
+- **Table header:** sticky, near-opaque `--thead`, uppercase 11px labels; sorted column reads accent-ink with a rotating 12px chevron.
 
-### Status Light
-Сигнатурный элемент системы. Круг 7px, заливка — цвет состояния, вокруг — кольцо `box-shadow: 0 0 0 3px` того же цвета в 12%. Четыре состояния: покой (`--idle`, «открыто»), работа (`--work`), упор (`--stop`), закрытие (`--ok`). Лампа стоит в заголовке колонки, в чипе состояния, в списке связей и на карточке документа — там она означает, что на документ ссылается хотя бы одна задача (зелёная) или что не ссылается никто (покой). Одна и та же лампа отвечает на вопрос «жива ли эта единица» для обеих сущностей продукта.
+### Segmented Control (signature)
+A glass capsule (chrome material, 3px inner padding) whose raised white thumb slides between segments — **the one authored motion of the product**: `transform .32s cubic-bezier(.3,1.22,.36,1)`, a ~5% spring overshoot, driven by `--seg-i`/`--seg-n` custom properties. Segments are 13px/500, dim at rest, ink when hovered or pressed. Heads the task view (Доска / Список / Граф) and the docs view.
 
-### Reading View
-Читальня снимает точечную землю, ставит полосу пути сверху (`--bar`, моно 11.5px) и держит текст в `min(780px, 100%)` с полями 44px сверху и 30vh снизу. Каждый блок при наведении подсвечивается `--raise` с радиусом 7px и отрицательными полями −12px, так что подсветка выходит за меру текста и читается как строка списка. По клику блок заменяется на `textarea` с фоном `--sunk` и границей `--accent`, набранный моно 13.5px/1.7 и растущий по содержимому, с подсказкой 11.5px под ним: Ctrl+Enter — сохранить, Esc — отменить, пусто — удалить. Правка происходит там же, где чтение; отдельного режима редактирования нет.
+### Status Lamp (signature)
+An 8px dot with a 3-px halo (`0 0 0 3px color-mix(in srgb, <lamp> 22%, transparent)`). Idle gray, doing orange, blocked red, closed green. The lamp carries status everywhere — cards, table rows, graph nodes, sheets — so panels never need status-coloured backgrounds.
 
-### Toast
-Прямоугольник 10px на `--panel` с границей `--edge` и тенью `--lift`, прижат к правому нижнему углу с отступом 18px, шириной до `min(420px, 70vw)`. Единственная анимация продукта: `opacity` и `translateY(8px)` за 0.3s по `cubic-bezier(.16, 1, .3, 1)`. Ошибка перекрашивает границу и текст в `--stop` и живёт 6s против обычных 2.6s.
+### Graph View (signature)
+Panel-glass field; nodes are fixed **260×70px** cards (the CSS mirrors the `NW`/`NH` layout constants in `renderGraph` so edge anchors hit node midlines). Epic-tree skeleton edges are 1.5px hairline-strong curves; blocker edges are `stop-text` red at .75 opacity with arrowheads. Epic node titles go weight 600; closed nodes fade to .5; parentless tasks flow below as a grid under an uppercase label. A sticky legend of glass capsule keys floats top-right.
 
-### Named Rules
-**Правило неподвижности.** Движение в системе — только 0.12s на цвет, фон и границу при наведении, плюс одно появление тоста на 0.3s. Ничего не выезжает, не масштабируется и не пульсирует. При `prefers-reduced-motion` все длительности падают до 0.01ms.
+### Motion
+The segmented thumb spring and `@starting-style` entrances (drawer slides 28px from the right over .38s `cubic-bezier(.32,.72,.28,1)`; dialog scales from .96; scrim and toast fade) are the entire motion budget; everything else is 120–200ms property transitions. `prefers-reduced-motion` collapses all of it to .01ms globally.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** держать состояние в лампе 7px с кольцом 3px и оставлять поверхность карточки `--card` во всех четырёх состояниях.
-- **Do** тратить `--accent` только на намерение: главное действие, текущий выбор, фокус, открытую карточку, ссылку в прозе.
-- **Do** проверять новый серый измерением 4.5:1 против `--card` в обеих темах, прежде чем давать ему имя.
-- **Do** ставить сериф на имена (от 14.5px и веса 600), Golos — на речь интерфейса и прозу, моно — на машинные строки: id, счётчики, пути, код, исходник markdown.
-- **Do** рисовать новые иконки в тот же спрайт: сетка 20×20, обводка 1.5px, круглые концы и стыки, без заливки.
-- **Do** класть новую поверхность на лестницу радиусов 5/7/10/14/20 и на единственный волосок 1px `--line`.
-- **Do** оставлять пунктир только там, куда можно что-то положить: пустая колонка, цель перетаскивания, «добавить абзац».
-- **Do** называть состояния словами `bd` по-русски и оставлять типы задач латиницей моноширинными.
-- **Do** снимать точечную землю в любом длинном чтении и возвращать её на любой рабочий холст.
+- **Do** build every new chrome surface from the `.glass` recipe: material fill + `backdrop-filter: blur(28px) saturate(1.8)` + 1px glass edge + rest shadow + specular inset.
+- **Do** keep the 12px gap between every slab, and between slabs and the viewport edge.
+- **Do** use the capsule (999px) for anything pressable and the 10/14/22/26 ladder for containers.
+- **Do** carry status with the 8px lamp + halo, and set any status-coloured text in the dark accessible variants.
+- **Do** set machine strings (ids, counts, paths, dates, types) in JetBrains Mono, and keep bd's vocabulary verbatim.
+- **Do** give dense reading surfaces near-opaque fields (`glass-reading` or stronger); reserve the lightest glass for columns and chrome.
 
 ### Don't:
-- **Don't** заливать карточку, её границу или заголовок цветом статуса — для этого есть лампа.
-- **Don't** брать `--accent` под состояние, предупреждение или крупную заливку и не добавлять третий акцентный элемент в зону, где он уже звучит дважды (точка проекта и главное действие в верхней полосе).
-- **Don't** расширять `--accent` как подложку под текст мельче 13px/500: в тёмной теме пара белого с фиолетовым даёт 4.23:1 — ниже того пола 4.5:1, который держит нейтральный ряд, и перед повторным использованием фиолетовый нужно затемнить.
-- **Don't** набирать серифом прозу, подписи и всё, что мельче 14.5px.
-- **Don't** ставить системную гарнитуру на дисплейный уровень: все три лица self-hosted с кириллическими подмножествами, `Georgia` и `system-ui` живут только в откате.
-- **Don't** вводить третью ступень тени и не рисовать жёсткую смещённую тень без размытия.
-- **Don't** заводить ветку `prefers-color-scheme`: тёмное — поверхность, светлое — то, что просят руками.
-- **Don't** подставлять эмодзи или юникод-глифы вместо иконки: любой значок берётся из спрайта через `<use>`.
-- **Don't** использовать заглавную подпись 11px/0.06em как рубрику над заголовком — она подписывает поле или группу и стоит только над содержимым, которое называет.
-- **Don't** добавлять выезды, масштабирования и пульсации: единственная анимация мира — появление тоста.
+- **Don't** add a second tint. Apple blue #0071e3 (with its lift and ink variants) is the only interface accent.
+- **Don't** put backdrop-filter on cards or any repeated small element; blur belongs to panels and chrome only.
+- **Don't** add a `prefers-color-scheme` branch. Dark is `[data-theme='dark']` via the manual rail toggle only — a deliberate, user-confirmed decision.
+- **Don't** paint panels or rows with status colours; the lamp is the status, the pane stays glass.
+- **Don't** let any slab run edge-to-edge or turn the rail into a full-height sidebar; the floating-slab composition is the thesis.
+- **Don't** author new easing or entrance motion outside the two existing grammars (seg-thumb spring, @starting-style entrance), and never bypass the reduced-motion collapse.

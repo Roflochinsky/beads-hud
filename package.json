@@ -1,6 +1,6 @@
 {
   "name": "@roflochinsky/beads-hud",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Доска задач beads и документов проекта на localhost плюс строка статуса Claude Code, которая держит на неё живую ссылку",
   "keywords": [
     "beads",

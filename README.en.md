@@ -17,9 +17,9 @@
 
 **A board for your [beads](https://github.com/gastownhall/beads) issues and project documents on `localhost` — and a Claude Code status line that keeps a live link to it.**
 
-<a href="https://www.npmjs.com/package/@roflochinsky/beads-hud"><img src="https://img.shields.io/npm/v/@roflochinsky/beads-hud?color=8b5cf6&label=npm" alt="npm" /></a>
-<img src="https://img.shields.io/badge/node-%E2%89%A522-8b5cf6" alt="Node ≥22" />
-<img src="https://img.shields.io/badge/license-MIT-8b5cf6" alt="MIT" />
+<a href="https://www.npmjs.com/package/@roflochinsky/beads-hud"><img src="https://img.shields.io/npm/v/@roflochinsky/beads-hud?color=0071e3&label=npm" alt="npm" /></a>
+<img src="https://img.shields.io/badge/node-%E2%89%A522-0071e3" alt="Node ≥22" />
+<img src="https://img.shields.io/badge/license-MIT-0071e3" alt="MIT" />
 
 <img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/board.png" alt="The beads-hud board" width="100%" />
 
@@ -35,7 +35,7 @@ A terminal answers two questions badly: *what does this project's written thinki
 beads-hud answers both, and puts the answer where you are already looking:
 
 - **the status line** is always in view — how many issues are ready, how many are waiting, how much context and money is spent, and a live link to the board;
-- **the board** behind that link — issues in four status columns, and every `.md` file of the project, readable and editable in place.
+- **the board** behind that link — issues as a kanban, a sortable table, or a dependency graph, and every `.md` file of the project, readable and editable in place.
 
 The two need each other: the line knows the board is up for this folder, and a hook brings it up on session start.
 
@@ -120,6 +120,10 @@ Clicking a card opens the issue: description, design, and clickable links — wh
 
 The left rail splits work by kind: all issues, no epic, epics (each on its own row), features, bugs, verification, everything else. A kind is itself a destination: every bug in one place, every feature in one.
 
+Above the board sits a view switcher: **board**, **list**, **graph**. The list is a table sortable by any column — status, id, type, priority, epic, what it waits for, when it changed. The graph is a map of the whole project: the epic tree with its children, and red blocker arrows on top — both beads relationships on one screen.
+
+<img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/graph.png" alt="Graph: epic tree and blocker arrows" width="100%" />
+
 ### Documents
 
 <img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/docs.png" alt="Documents as a kanban by folder" width="100%" />
@@ -130,7 +134,7 @@ Every `.md` in the project, laid out as a kanban — **by folder**, or **by the 
 
 <img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/read.png" alt="Reading a document" width="100%" />
 
-A document opens with real typography — serif headings, a measure capped at 780px, tables, code, quotes, images.
+A document opens with real typography — a measure capped at 760px, tables, code, quotes, images.
 
 It is edited in place: clicking a paragraph turns it into its own markdown source.
 
@@ -139,11 +143,11 @@ It is edited in place: clicking a paragraph turns it into its own markdown sourc
 `Ctrl+Enter` saves, `Esc` cancels, an empty edit deletes the block. Everything outside the edited paragraph stays byte for byte: the server splits the document into blocks with their exact offsets and splices the edit in by them.
 
 <details>
-<summary><strong>Light theme</strong></summary>
+<summary><strong>Dark theme</strong></summary>
 
-Dark by default, light from the button at the bottom of the rail. Both are built from one set of tokens.
+Light by default, dark from the button at the bottom of the rail. Both are built from one set of tokens.
 
-<img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/board-light.png" alt="Light theme" width="100%" />
+<img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/board-dark.png" alt="Dark theme" width="100%" />
 
 </details>
 
@@ -229,7 +233,7 @@ Do not click the link in the status line: Claude Code's own interface draws it, 
 > [!WARNING]
 > On native Windows the status line will not work — `beads-hud-statusline` is a shell script. The board and the server run anywhere Node does.
 
-One runtime dependency: `marked`. Fonts live in `public/fonts` and are served locally, so no internet is needed: **Golos Text** for the interface, **Source Serif 4** for headings and reading, **JetBrains Mono** for identifiers and code.
+One runtime dependency: `marked`. Fonts live in `public/fonts` and are served locally, so no internet is needed: **Inter** for the interface (the closest free stand-in for SF Pro with full Cyrillic), **JetBrains Mono** for identifiers and code.
 
 ## Known limitation
 
