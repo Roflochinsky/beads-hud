@@ -173,12 +173,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn--quiet{background:transparent;border-color:transparent;box-shadow:none;color:var(--dim)}
 .btn--quiet:hover{background:var(--sunk);color:var(--text)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.btn[hidden]{display:none}
 .icon-btn{
   display:grid;place-items:center;width:30px;height:30px;cursor:pointer;
   background:transparent;border:0;border-radius:50%;color:var(--faint);
   transition:background .15s,color .15s;
 }
 .icon-btn:hover{background:var(--sunk);color:var(--text)}
+/* «Скрыть панель» отодвинут от «Закрыть»: соседство двух «закрыть» — ошибка ожидания. */
+.icon-btn--apart{margin-left:10px}
+.fresh{font-size:11.5px;color:var(--faint);white-space:nowrap}
 
 /* ── Canvas ────────────────────────────────────────────────────── */
 .canvas{
@@ -218,6 +222,39 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 .seg__btn:hover{color:var(--text)}
 .seg__btn[aria-pressed='true']{color:var(--text)}
+
+/* ── Search & closed toggle ────────────────────────────────────── */
+.search{
+  display:inline-flex;align-items:center;gap:7px;padding:0 8px 0 14px;
+  border-radius:var(--r-pill);color:var(--faint);
+  background:var(--glass-bg);
+  backdrop-filter:blur(28px) saturate(1.8);
+  -webkit-backdrop-filter:blur(28px) saturate(1.8);
+  border:1px solid var(--glass-edge);
+  box-shadow:var(--shadow),var(--specular);
+}
+.search:focus-within{border-color:var(--accent);color:var(--dim)}
+.search input{
+  background:transparent;border:0;outline:none;padding:8px 6px 8px 0;
+  font-size:13px;width:150px;color:var(--text);
+}
+.search input::placeholder{color:var(--faint)}
+.search input::-webkit-search-cancel-button{display:none}
+.toggle{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  padding:7px 15px;border-radius:var(--r-pill);
+  font-size:13px;font-weight:500;color:var(--dim);
+  background:var(--glass-bg);
+  backdrop-filter:blur(28px) saturate(1.8);
+  -webkit-backdrop-filter:blur(28px) saturate(1.8);
+  border:1px solid var(--glass-edge);
+  box-shadow:var(--shadow),var(--specular);
+  transition:color .15s,background .15s;
+}
+.toggle:hover{color:var(--text)}
+.toggle[aria-pressed='true']{background:var(--tint);color:var(--accent-ink);border-color:transparent}
+.toggle__n{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.toggle[aria-pressed='true'] .toggle__n{color:var(--accent-ink)}
 
 /* ── Kind rail ─────────────────────────────────────────────────── */
 .kinds{
@@ -488,6 +525,10 @@ tr.is-closed .tbl__title{color:var(--dim);text-decoration:line-through;text-deco
 .read th,.read td{border:1px solid var(--hairline);padding:8px 11px;text-align:left;vertical-align:top}
 .read th{background:var(--sunk);font-weight:600}
 .read img{max-width:100%;height:auto;border-radius:var(--r-card)}
+.read .fm{background:var(--sunk);border-radius:var(--r-in);padding:10px 14px;margin:0 0 .6em}
+.read .fm summary{cursor:pointer;font-size:12px;color:var(--faint);user-select:none}
+.read .fm summary:hover{color:var(--text)}
+.read .fm pre{background:none;border:0;padding:10px 0 2px;margin:0;font-size:12px;line-height:1.6}
 
 /* ── Task drawer ───────────────────────────────────────────────── */
 .drawer{
@@ -518,7 +559,19 @@ tr.is-closed .tbl__title{color:var(--dim);text-decoration:line-through;text-deco
   font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
   color:var(--faint);margin:0 0 8px;
 }
-.task__text{white-space:pre-wrap;margin:0 0 24px;font-size:14px;line-height:1.7;color:var(--text)}
+/* bd descriptions are markdown written by agents — rendered, at drawer scale. */
+.task__md{margin:0 0 24px;font-size:14px;line-height:1.7;color:var(--text)}
+.task__md p,.task__md ul,.task__md ol,.task__md pre,.task__md blockquote{margin:0 0 .6em}
+.task__md h1,.task__md h2,.task__md h3,.task__md h4{font-size:14px;font-weight:600;margin:1.1em 0 .3em}
+.task__md ul,.task__md ol{padding-left:1.35em}
+.task__md li{margin:.15em 0}
+.task__md li::marker{color:var(--faint)}
+.task__md a{color:var(--accent-ink);text-underline-offset:3px}
+.task__md code{font-family:var(--mono);font-size:12.5px;background:var(--sunk);border-radius:6px;padding:1px 5px}
+.task__md pre{background:var(--sunk);border-radius:var(--r-in);padding:12px 14px;overflow-x:auto}
+.task__md pre code{background:none;padding:0;font-size:12px;line-height:1.65}
+.task__md blockquote{border-left:1px solid var(--hairline-strong);padding-left:14px;margin-left:0;color:var(--dim)}
+.task__md hr{border:0;border-top:1px solid var(--hairline);margin:1em 0}
 .task__links{list-style:none;padding:0;margin:0 0 24px;display:flex;flex-direction:column;gap:6px}
 .task__link{
   display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;
@@ -599,6 +652,11 @@ tr.is-closed .tbl__title{color:var(--dim);text-decoration:line-through;text-deco
   .read__meta{display:none}
   /* The lamp already carries the status; the word yields its width to the title. */
   .tbl__status>span+span{display:none}
+  .view__bar{flex-wrap:wrap;row-gap:8px}
+  .toggle__label{display:none}
+  .search input{width:96px}
+  .fresh,#refresh{display:none}
+  .top{padding:0 8px 0 14px;gap:6px}
   .crumb select{max-width:38vw}
   :root{--rail-w:48px}
   .rail__tab{width:36px;height:36px}

@@ -138,9 +138,19 @@ function blocksOf(md) {
       start = pos
     }
     if (fence) {
-      if (isFence) fence = null
+      // 'fm' closes on its own '---' and the block ends right there — no blank
+      // line after the header required.
+      if (fence === 'fm' && line.trim() === '---') {
+        fence = null
+        push(pos + line.length)
+        open = -1
+      } else if (fence !== 'fm' && isFence) fence = null
     } else if (isFence) {
       fence = true
+    } else if (pos === 0 && line.trim() === '---' && /^---\r?\n[\s\S]*?\r?\n---(\r?\n|$)/.test(md)) {
+      // A leading '---' opens YAML frontmatter — but only when a closing '---'
+      // actually exists; a lone rule must not swallow the whole document.
+      fence = 'fm'
     } else if (!line.trim() && open >= 0) {
       push(pos)
       open = -1
@@ -151,7 +161,21 @@ function blocksOf(md) {
   return out
 }
 
-const rendered = (md) => blocksOf(md).map((b) => ({ ...b, html: marked.parse(b.src) }))
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+// Frontmatter is machinery, not prose: it ships collapsed, native <details>, raw text.
+const strWord = (n) => {
+  const d = n % 10
+  const h = n % 100
+  return d === 1 && h !== 11 ? 'строка' : d >= 2 && d <= 4 && (h < 10 || h >= 20) ? 'строки' : 'строк'
+}
+const fmHtml = (src) => {
+  const lines = src.split('\n').length - 2
+  return `<details class="fm"><summary>служебная шапка · ${lines} ${strWord(lines)}</summary><pre>${esc(src)}</pre></details>`
+}
+const isFm = (b) => b.start === 0 && /^---\n[\s\S]*\n---$/.test(b.src)
+
+const rendered = (md) => blocksOf(md).map((b) => ({ ...b, html: isFm(b) ? fmHtml(b.src) : marked.parse(b.src) }))
 
 // beads-hud install / uninstall — writing into Claude Code's settings is an
 // explicit command, never a postinstall side effect.
@@ -188,7 +212,25 @@ if (process.argv[2] === 'selfcheck') {
   a.equal(edited, '# Заголовок\n\nНовый текст.\n\n```js\nconst x = 1\n\nconst y = 2\n```\n\n- пункт\n- пункт\n')
   a.deepEqual(blocksOf('').length, 0)
   a.deepEqual(blocksOf('\n\n   \n').length, 0)
-  console.log('selfcheck: ок,', b.length, 'блока')
+  const fmDoc = '---\nname: x\ncolors:\n  a: "#fff"\n---\n\nПервый абзац.\n'
+  const fb = blocksOf(fmDoc)
+  a.equal(fb[0].src, '---\nname: x\ncolors:\n  a: "#fff"\n---', 'frontmatter должен быть одним блоком')
+  a.equal(fb[1].src, 'Первый абзац.')
+  for (const x of fb) a.equal(fmDoc.slice(x.start, x.end), x.src)
+  a.ok(isFm(fb[0]) && !isFm(fb[1]))
+  // Шапка без пустой строки после — блок всё равно заканчивается на '---'.
+  const tight = blocksOf('---\na: 1\n---\n# Заголовок\n')
+  a.deepEqual(tight.map((x) => x.src), ['---\na: 1\n---', '# Заголовок'])
+  a.ok(isFm(tight[0]))
+  // Одинокий '---' в первой строке — линия, а не шапка: документ не склеивается.
+  const rule = blocksOf('---\n\nТекст после линии.\n')
+  a.deepEqual(rule.map((x) => x.src), ['---', 'Текст после линии.'])
+  a.ok(!isFm(rule[0]))
+  a.deepEqual(strWord(1), 'строка')
+  a.deepEqual(strWord(2), 'строки')
+  a.deepEqual(strWord(147), 'строк')
+  a.deepEqual(strWord(11), 'строк')
+  console.log('selfcheck: ок,', b.length + fb.length, 'блоков')
   process.exit(0)
 }
 
@@ -399,6 +441,7 @@ const server = createServer(async (req, res) => {
         b.op === 'close' ? ['close', b.id]
         : b.op === 'claim' ? ['update', b.id, '--claim']
         : b.op === 'reopen' ? ['reopen', b.id]
+        : b.op === 'release' ? ['update', b.id, '--status=open']
         : b.op === 'create' ? ['create', `--title=${b.title}`, `--type=${b.type || 'task'}`, `--priority=${b.priority ?? 2}`, ...(b.parent ? [`--parent=${b.parent}`] : [])]
         : null
       if (!args) return json(res, 400, { error: 'Неизвестная операция' })
@@ -412,6 +455,11 @@ const server = createServer(async (req, res) => {
         return json(res, 500, { error: (e.stderr || e.message || '').trim().split('\n')[0] || 'bd отказал' })
       }
     }
+
+    // The one dependency, served to the browser too: the drawer renders bd
+    // descriptions with the same marked that renders documents.
+    if (url.pathname === '/vendor/marked.esm.js')
+      return send(res, 200, 'text/javascript; charset=utf-8', await readFile(join(import.meta.dirname, 'node_modules', 'marked', 'lib', 'marked.esm.js')))
 
     const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1)
     const full = resolve(PUBLIC, file)

@@ -1,3 +1,5 @@
+import { marked } from '/vendor/marked.esm.js'
+
 const $ = (id) => document.getElementById(id)
 const el = (tag, cls, text) => {
   const n = document.createElement(tag)
@@ -35,6 +37,11 @@ let sel = localStorage.getItem('beadshud.sel') || 'all'
 let view = 'board'
 let taskView = localStorage.getItem('beadshud.taskView') || 'board'
 let sort = { key: '', dir: 1 }
+let showClosed = localStorage.getItem('beadshud.closed') === '1'
+// Search is per-sitting on purpose: a filter that survives the night gives a
+// wrong picture of the world in the morning.
+let qTasks = ''
+let qDocs = ''
 let docGroup = localStorage.getItem('beadshud.docGroup') || 'dir'
 let data = { docs: [], issues: [], groups: [], loose: [] }
 let waiting = false
@@ -102,9 +109,39 @@ $('tv-table').onclick = () => setTaskView('table')
 $('tv-graph').onclick = () => setTaskView('graph')
 
 function renderTasks() {
+  $('closed-n').textContent = String(data.issues.filter((i) => i.column === 'closed').length)
   if (taskView === 'board') renderBoard()
   else if (taskView === 'table') renderTable()
   else renderGraph()
+}
+
+/* ── Closed toggle & search ────────────────────────────────────── */
+
+function setShowClosed(v) {
+  showClosed = v
+  localStorage.setItem('beadshud.closed', v ? '1' : '0')
+  $('show-closed').setAttribute('aria-pressed', String(v))
+  renderTasks()
+}
+$('show-closed').onclick = () => setShowClosed(!showClosed)
+
+$('search-tasks').oninput = () => {
+  qTasks = $('search-tasks').value.trim().toLowerCase()
+  renderTasks()
+}
+$('search-docs').oninput = () => {
+  qDocs = $('search-docs').value.trim().toLowerCase()
+  renderDocs()
+}
+for (const id of ['search-tasks', 'search-docs']) {
+  $(id).onkeydown = (e) => {
+    if (e.key !== 'Escape') return
+    e.stopPropagation()
+    if ($(id).value) {
+      $(id).value = ''
+      $(id).dispatchEvent(new Event('input'))
+    } else $(id).blur()
+  }
 }
 
 /* ── Kind rail ─────────────────────────────────────────────────── */
@@ -165,6 +202,11 @@ function selected() {
   return kids.length ? kids : self ? [self] : []
 }
 
+const hit = (i) => (i.title + ' ' + i.id).toLowerCase().includes(qTasks)
+const visible = (list) => list.filter((i) => (showClosed || i.column !== 'closed') && (!qTasks || hit(i)))
+const emptyMsg = (base) =>
+  data.error || (base.length ? (qTasks ? `Ничего не нашлось по «${qTasks}»` : 'Все задачи здесь закрыты.') : 'Здесь пока нет задач.')
+
 function card(i) {
   const c = el('button', `card${i.status === 'closed' ? ' card--closed' : ''}${task === i.id ? ' is-open' : ''}`)
   c.type = 'button'
@@ -215,14 +257,16 @@ function renderBoard() {
     board.appendChild(col.box)
     return
   }
-  const items = selected()
+  const base = selected()
+  const items = visible(base)
   if (!items.length) {
     const col = column('Пусто', null, 0)
-    col.body.appendChild(el('p', 'col__empty', data.error || 'Здесь пока нет задач.'))
+    col.body.appendChild(el('p', 'col__empty', emptyMsg(base)))
     board.appendChild(col.box)
     return
   }
   for (const c of COLUMNS) {
+    if (c.key === 'closed' && !showClosed) continue
     const list = items.filter((i) => i.column === c.key).sort((a, b) => a.priority - b.priority)
     const col = column(c.label, c.key, list.length)
     if (!list.length) col.body.appendChild(el('p', 'col__empty', '—'))
@@ -244,6 +288,7 @@ function renderBoard() {
         c.key === 'closed' ? 'close'
         : c.key === 'doing' ? 'claim'
         : issue.status === 'closed' ? 'reopen'
+        : issue.status === 'in_progress' ? 'release'
         : null
       if (!op) return toast('Из этой колонки так не переносят', 'err')
       await act({ op, id: issue.id })
@@ -281,8 +326,9 @@ function renderTable() {
   const box = $('tbl')
   box.replaceChildren()
   if (waiting && !data.issues.length) return box.appendChild(el('p', 'tbl__empty', 'считаю задачи…'))
-  const items = selected()
-  if (!items.length) return box.appendChild(el('p', 'tbl__empty', data.error || 'Здесь пока нет задач.'))
+  const base = selected()
+  const items = visible(base)
+  if (!items.length) return box.appendChild(el('p', 'tbl__empty', emptyMsg(base)))
 
   const list = [...items].sort((a, b) => {
     if (sort.key) {
@@ -360,11 +406,29 @@ function renderGraph() {
   if (waiting && !data.issues.length) return box.appendChild(el('p', 'graph__empty', 'считаю задачи…'))
   if (!data.issues.length) return box.appendChild(el('p', 'graph__empty', data.error || 'Здесь пока нет задач.'))
 
+  // The graph maps the whole project, so the kind filter stays out — but the
+  // closed toggle and the search apply; a match keeps its ancestors so the
+  // tree keeps its shape.
+  let base = data.issues.filter((i) => showClosed || i.column !== 'closed')
+  if (qTasks) {
+    const all = new Map(data.issues.map((i) => [i.id, i]))
+    const keep = new Set()
+    for (const i of base) {
+      if (!hit(i)) continue
+      for (let c = i; c; c = c.parent ? all.get(c.parent) : null) {
+        if (keep.has(c.id)) break
+        keep.add(c.id)
+      }
+    }
+    base = base.filter((i) => keep.has(i.id))
+  }
+  if (!base.length) return box.appendChild(el('p', 'graph__empty', emptyMsg(data.issues)))
+
   const NW = 260, NH = 70, GX = 96, GY = 10, CLUSTER = 30, PAD = 28
-  const byId = new Map(data.issues.map((i) => [i.id, i]))
+  const byId = new Map(base.map((i) => [i.id, i]))
   const kidsOf = (id) =>
-    data.issues.filter((i) => i.parent === id).sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))
-  const groupIds = new Set(data.groups.map((g) => g.id))
+    base.filter((i) => i.parent === id).sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))
+  const groupIds = new Set(data.groups.map((g) => g.id).filter((id) => byId.has(id)))
 
   // pos holds pixel coordinates of each node's top-left corner.
   const pos = new Map()
@@ -384,17 +448,15 @@ function renderGraph() {
     return mid
   }
 
-  for (const g of data.groups.filter((g) => !g.parent || !byId.has(g.parent))) {
-    place(byId.get(g.id) || g, 0)
+  for (const g of data.groups.filter((g) => byId.has(g.id) && (!g.parent || !byId.has(g.parent)))) {
+    place(byId.get(g.id), 0)
     cursor += CLUSTER
   }
   let W = PAD * 2 + (maxDepth + 1) * NW + maxDepth * GX
   const labels = []
   // The junk drawer flows into a grid of columns: twenty parentless tasks are a
   // field, not a tower under the epics.
-  const rest = [...data.loose, ...data.issues.filter((i) => !pos.has(i.id) && !data.loose.includes(i))].filter(
-    (i) => !pos.has(i.id),
-  )
+  const rest = base.filter((i) => !pos.has(i.id))
   if (rest.length) {
     const cols = Math.max(1, Math.min(3, Math.ceil(rest.length / 8)))
     labels.push({ text: 'Без эпика', y: cursor })
@@ -419,7 +481,7 @@ function renderGraph() {
     '<defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
     '<path d="M0 0 8 4 0 8Z" style="fill:var(--stop)" stroke="none"/></marker></defs>'
 
-  for (const i of data.issues) {
+  for (const i of base) {
     if (!i.parent || !pos.has(i.parent) || !pos.has(i.id)) continue
     const a = pos.get(i.parent)
     const b = pos.get(i.id)
@@ -431,7 +493,7 @@ function renderGraph() {
   }
   // ponytail: backward blocker arrows draw an S through the field; orthogonal
   // routing if a real project makes them unreadable.
-  for (const i of data.issues) {
+  for (const i of base) {
     for (const b of i.blockedBy) {
       if (!pos.has(b) || !pos.has(i.id)) continue
       const s = pos.get(b)
@@ -550,9 +612,14 @@ function renderDocs() {
   const board = $('docs-board')
   board.replaceChildren()
   board.classList.remove('board--grid')
-  if (!data.docs.length) {
+  const docs = qDocs
+    ? data.docs.filter((d) => (d.title + ' ' + d.path).toLowerCase().includes(qDocs))
+    : data.docs
+  if (!docs.length) {
     const col = column('Пусто', null, 0)
-    col.body.appendChild(el('p', 'col__empty', 'В этом проекте нет .md файлов'))
+    col.body.appendChild(
+      el('p', 'col__empty', data.docs.length ? `Ничего не нашлось по «${qDocs}»` : 'В этом проекте нет .md файлов'),
+    )
     board.appendChild(col.box)
     return
   }
@@ -563,10 +630,10 @@ function renderDocs() {
     groups.get(key).docs.push(d)
   }
   if (docGroup === 'dir') {
-    for (const d of data.docs) put(d.dir, d.dir || 'корень проекта', d)
+    for (const d of docs) put(d.dir, d.dir || 'корень проекта', d)
   } else {
     const titleOf = (id) => data.issues.find((i) => i.id === id)?.title || id
-    for (const d of data.docs) {
+    for (const d of docs) {
       if (d.links.length) for (const e of d.links) put(e, titleOf(e), d)
       else put('', 'Ни к чему не привязаны', d)
     }
@@ -619,7 +686,10 @@ function renderRead() {
     n.innerHTML = b.html
     n.dataset.i = String(i)
     n.onclick = (e) => {
-      if (e.target.closest('a')) return
+      // A link click follows the link, a summary click toggles the frontmatter,
+      // and a drag that left a selection is copying, not editing.
+      if (e.target.closest('a') || e.target.closest('summary')) return
+      if (!window.getSelection().isCollapsed) return
       editBlock(i)
     }
     box.appendChild(n)
@@ -723,7 +793,9 @@ function openTask(id) {
   const block = (label, text) => {
     if (!text) return
     body.appendChild(el('h2', 'task__h', label))
-    body.appendChild(el('p', 'task__text', text))
+    const md = el('div', 'task__md')
+    md.innerHTML = marked.parse(text)
+    body.appendChild(md)
   }
   block('Описание', i.description)
   block('Замысел', i.design)
@@ -768,7 +840,8 @@ function openTask(id) {
   }
 
   const closed = i.status === 'closed'
-  $('task-move').hidden = i.status === 'in_progress' || closed
+  $('task-move').hidden = i.status !== 'open'
+  $('task-release').hidden = i.status !== 'in_progress'
   $('task-shut').textContent = closed ? 'Открыть заново' : 'Закрыть'
   body.scrollTop = 0
   if (view === 'board') renderTasks()
@@ -783,6 +856,7 @@ function closeTask() {
 
 $('task-x').onclick = closeTask
 $('task-move').onclick = () => act({ op: 'claim', id: task })
+$('task-release').onclick = () => act({ op: 'release', id: task })
 $('task-shut').onclick = () =>
   act({ op: data.issues.find((x) => x.id === task)?.status === 'closed' ? 'reopen' : 'close', id: task })
 
@@ -798,7 +872,25 @@ async function act(payload) {
     const d = await r.json()
     if (d.error) throw new Error(d.error)
     toast(d.out ? d.out.split('\n')[0] : 'Готово')
-    await load()
+    // bd подтвердил запись; полный перескан большого проекта занимает десятки
+    // секунд, поэтому карточка переезжает сразу, а скан догоняет фоном.
+    const i = payload.id && data.issues.find((x) => x.id === payload.id)
+    if (i) {
+      if (payload.op === 'close') {
+        i.status = 'closed'
+        i.column = 'closed'
+      } else if (payload.op === 'claim') {
+        i.status = 'in_progress'
+        i.column = 'doing'
+      } else if (payload.op === 'reopen' || payload.op === 'release') {
+        i.status = 'open'
+        i.column = i.blockedBy.length ? 'blocked' : 'todo'
+      }
+      renderKinds()
+      renderTasks()
+      if (task === i.id) openTask(i.id)
+      if (!loading) load().catch(() => {})
+    } else await load()
     return true
   } catch (e) {
     toast(e.message, 'err')
@@ -862,10 +954,22 @@ function linkDocs() {
   }
 }
 
+/** The picture's age, always on screen: the last date stays put, «обновляю…» rides beside it. */
+let freshAt = ''
+function setFresh(state) {
+  if (state !== 'loading') freshAt = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  const stamp = freshAt ? 'обновлено ' + freshAt : ''
+  $('fresh').textContent = state === 'loading' ? (stamp ? stamp + ' · обновляю…' : 'обновляю…') : stamp
+}
+$('refresh').onclick = () => {
+  if (!loading) load().catch(() => {})
+}
+
 let loading = false
 async function load() {
   const want = root
   loading = true
+  setFresh('loading')
   // The documents land in a moment; bd can take a minute on a big workspace. The
   // board says so rather than showing the previous folder's tasks as if they were
   // this one's.
@@ -900,6 +1004,9 @@ async function load() {
     renderTasks()
     if (view === 'docs') renderDocs()
     if (task) data.issues.some((i) => i.id === task) ? openTask(task) : closeTask()
+    // A cached answer served mid-rescan keeps saying «обновляю…» until the poll
+    // brings a fresh one.
+    setFresh(b.stale ? 'loading' : 'done')
   })
 
   try {
@@ -959,8 +1066,21 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault()
     $('new-task').click()
   }
+  if ((e.key === '/' || e.key === 'f') && !e.metaKey && !e.ctrlKey && !typing && $('entry').hidden) {
+    const inp = view === 'board' ? $('search-tasks') : view === 'docs' ? $('search-docs') : null
+    if (inp) {
+      e.preventDefault()
+      inp.focus()
+    }
+  }
 })
 
+document.addEventListener('visibilitychange', () => {
+  // Coming back from the terminal is exactly when the picture is oldest.
+  if (!document.hidden && !loading && editing == null) load().catch(() => {})
+})
+
+setShowClosed(showClosed)
 setTaskView(taskView)
 setGroup(docGroup)
 await loadProjects()

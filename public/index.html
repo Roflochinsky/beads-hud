@@ -42,6 +42,8 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <symbol id="i-clock" viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.25"/><path d="M10 6.5V10l2.5 1.75"/></symbol>
   <symbol id="i-list" viewBox="0 0 20 20"><path d="M7 5.25h9.25M7 10h9.25M7 14.75h9.25"/><path d="M3.75 5.25h.01M3.75 10h.01M3.75 14.75h.01"/></symbol>
   <symbol id="i-graph" viewBox="0 0 20 20"><circle cx="5" cy="10" r="2.25"/><circle cx="15" cy="4.75" r="2.25"/><circle cx="15" cy="15.25" r="2.25"/><path d="M7 9 12.9 5.6M7 11l5.9 3.4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.25"/><path d="m13 13 3.75 3.75"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 20 20"><path d="M15.4 11.5a5.6 5.6 0 1 1-.9-4.6"/><path d="M15.9 3.6v3.3h-3.3"/></symbol>
 </svg>
 
 <nav class="rail glass" aria-label="Разделы">
@@ -69,6 +71,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <span class="crumb crumb--static" id="view-name">задачи</span>
   <span class="top__note" id="crumb"></span>
   <span class="spacer"></span>
+  <span class="fresh" id="fresh" role="status"></span>
+  <button class="icon-btn" id="refresh" type="button" title="Обновить сейчас" aria-label="Обновить сейчас">
+    <svg class="ico ico--sm" aria-hidden="true"><use href="#i-refresh"/></svg>
+  </button>
   <button class="btn btn--accent" id="new-task" type="button" aria-label="Новая задача">
     <svg class="ico ico--sm" aria-hidden="true"><use href="#i-plus"/></svg>
     <span class="btn__label">Новая задача</span>
@@ -91,6 +97,16 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <svg class="ico ico--sm" aria-hidden="true"><use href="#i-graph"/></svg><span class="seg__label">Граф</span>
         </button>
       </div>
+      <label class="search">
+        <svg class="ico ico--sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="search-tasks" type="search" placeholder="Поиск задач" autocomplete="off" aria-label="Поиск задач" />
+      </label>
+      <span class="spacer"></span>
+      <button class="toggle" id="show-closed" type="button" aria-pressed="false" aria-label="Показывать закрытые задачи" title="Показывать закрытые задачи">
+        <span class="light light--closed" aria-hidden="true"></span>
+        <span class="toggle__label">Закрытые</span>
+        <span class="toggle__n" id="closed-n"></span>
+      </button>
     </div>
     <div class="board" id="board"></div>
     <div class="tbl" id="tbl" hidden></div>
@@ -109,6 +125,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <svg class="ico ico--sm" aria-hidden="true"><use href="#i-link"/></svg>по работе
         </button>
       </div>
+      <label class="search">
+        <svg class="ico ico--sm" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="search-docs" type="search" placeholder="Поиск документов" autocomplete="off" aria-label="Поиск документов" />
+      </label>
     </div>
     <div class="board board--docs" id="docs-board"></div>
   </section>
@@ -131,9 +151,10 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <div class="drawer__head">
     <span class="mono" id="task-id"></span>
     <span class="spacer"></span>
-    <button class="btn btn--quiet" id="task-move" type="button">В работу</button>
-    <button class="btn btn--quiet" id="task-shut" type="button">Закрыть</button>
-    <button class="icon-btn" id="task-x" type="button" aria-label="Закрыть панель">
+    <button class="btn" id="task-move" type="button">В работу</button>
+    <button class="btn btn--quiet" id="task-release" type="button" hidden>Вернуть в открытые</button>
+    <button class="btn" id="task-shut" type="button">Закрыть</button>
+    <button class="icon-btn icon-btn--apart" id="task-x" type="button" aria-label="Скрыть панель" title="Скрыть панель">
       <svg class="ico ico--sm" aria-hidden="true"><use href="#i-close"/></svg>
     </button>
   </div>
