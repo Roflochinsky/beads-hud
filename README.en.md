@@ -120,7 +120,11 @@ Clicking a card opens the issue: description, design, and clickable links — wh
 
 The left rail splits work by kind: all issues, no epic, epics (each on its own row), features, bugs, verification, everything else. A kind is itself a destination: every bug in one place, every feature in one.
 
-Above the board sits a view switcher: **board**, **list**, **graph**. The list is a table sortable by any column — status, id, type, priority, epic, what it waits for, when it changed. The graph is a map of the whole project: the epic tree with its children, and red blocker arrows on top — both beads relationships on one screen.
+Above the board sits a view switcher: **board**, **list**, **graph**. The list is a table sortable by any column — status, id, type, priority, epic, what it waits for, when it changed. A row opens the issue, same as a card.
+
+<img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/table.png" alt="List: sortable issue table" width="100%" />
+
+The graph is a map of the whole project: the epic tree with its children, and red blocker arrows on top — both beads relationships on one screen.
 
 <img src="https://raw.githubusercontent.com/Roflochinsky/beads-hud/main/assets/graph.png" alt="Graph: epic tree and blocker arrows" width="100%" />
 
