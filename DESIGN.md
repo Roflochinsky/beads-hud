@@ -30,6 +30,15 @@ colors:
   work-lamp: "#ff9500"
   stop-lamp: "#ff3b30"
   idle-lamp: "#98989f"
+  shadow-ink-contact: "rgba(20,25,60,.07)"
+  shadow-ink-button: "rgba(20,25,60,.08)"
+  shadow-ink-hover: "rgba(20,25,60,.09)"
+  shadow-ink-far: "rgba(20,25,60,.12)"
+  shadow-ink-thumb: "rgba(20,25,60,.18)"
+  table-row-dark: "rgba(32,34,52,.55)"
+  table-hover-dark: "rgba(56,58,80,.75)"
+  table-selected: "rgba(213,231,252,.85)"
+  table-selected-dark: "rgba(38,66,110,.6)"
 typography:
   display:
     fontFamily: "Inter, -apple-system, system-ui, sans-serif"
@@ -49,11 +58,27 @@ typography:
     fontWeight: 600
     lineHeight: 1.3
     letterSpacing: "-0.01em"
+  section:
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
+    fontSize: "21px"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "-0.02em"
   body:
     fontFamily: "Inter, -apple-system, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.5
+  control:
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 500
+  display-narrow:
+    fontFamily: "Inter, -apple-system, system-ui, sans-serif"
+    fontSize: "24px"
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   reading:
     fontFamily: "Inter, -apple-system, system-ui, sans-serif"
     fontSize: "15px"
@@ -70,8 +95,10 @@ typography:
     fontWeight: 400
     letterSpacing: "-0.01em"
 rounded:
+  focus: "6px"
   in: "10px"
   card: "14px"
+  toast: "18px"
   panel: "22px"
   slab: "26px"
   pill: "999px"
