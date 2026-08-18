@@ -350,6 +350,13 @@ const boardOf = (root) =>
 
 const MAKE = { docs: docsOf, board: boardOf }
 
+// Диск помнит последний удачный скан каждого проекта: холодный старт и смена
+// проекта показывают прошлую доску мгновенно — с честным временем скана и
+// пометкой stale, пока фоном идёт настоящий bd. Срока годности нет намеренно:
+// картинка с видимым возрастом лучше пустоты.
+const diskPath = (root) => join(RUN_DIR, 'board-' + Buffer.from(root).toString('base64url') + '.json')
+const readDisk = (root) => readFile(diskPath(root), 'utf8').then(JSON.parse).catch(() => null)
+
 async function part(kind, rootIn) {
   const root = safeRoot(rootIn)
   if (!root) return { error: 'Папка вне домашнего каталога' }
@@ -358,10 +365,15 @@ async function part(kind, rootIn) {
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.data
   let job = inflight.get(key)
   if (!job) {
+    const t0 = Date.now()
     job = MAKE[kind](root)
       .then((data) => {
-        cache.set(key, { at: Date.now(), data })
-        return data
+        // scannedAt — момент реального ответа bd, scanMs — его цена: клиент
+        // показывает первое и подстраивает частоту опроса по второму.
+        const out = { ...data, scannedAt: Date.now(), scanMs: Date.now() - t0 }
+        cache.set(key, { at: Date.now(), data: out })
+        if (kind === 'board' && !data.error) writeFile(diskPath(root), JSON.stringify(out)).catch(() => {})
+        return out
       })
       .finally(() => inflight.delete(key))
     inflight.set(key, job)
@@ -369,6 +381,13 @@ async function part(kind, rootIn) {
   if (hit) {
     job.catch(() => {})
     return { ...hit.data, stale: true }
+  }
+  if (kind === 'board') {
+    const disk = await readDisk(root)
+    if (disk) {
+      job.catch(() => {})
+      return { ...disk, stale: true }
+    }
   }
   return job
 }

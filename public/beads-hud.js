@@ -72,8 +72,7 @@ function show(next) {
   $('view-board').hidden = next !== 'board'
   $('view-docs').hidden = next !== 'docs'
   $('view-read').hidden = next !== 'read'
-  // The graph is the whole project's map, so the kind filter has nothing to say there.
-  $('kinds').hidden = next !== 'board' || taskView === 'graph'
+  $('kinds').hidden = next !== 'board'
   $('tab-board').setAttribute('aria-current', String(next === 'board'))
   $('tab-docs').setAttribute('aria-current', String(next !== 'board'))
   $('view-name').textContent =
@@ -101,7 +100,6 @@ function setTaskView(v) {
   $('board').hidden = v !== 'board'
   $('tbl').hidden = v !== 'table'
   $('graphview').hidden = v !== 'graph'
-  $('kinds').hidden = view !== 'board' || v === 'graph'
   renderTasks()
 }
 $('tv-board').onclick = () => setTaskView('board')
@@ -406,10 +404,28 @@ function renderGraph() {
   if (waiting && !data.issues.length) return box.appendChild(el('p', 'graph__empty', 'считаю задачи…'))
   if (!data.issues.length) return box.appendChild(el('p', 'graph__empty', data.error || 'Здесь пока нет задач.'))
 
-  // The graph maps the whole project, so the kind filter stays out — but the
-  // closed toggle and the search apply; a match keeps its ancestors so the
-  // tree keeps its shape.
-  let base = data.issues.filter((i) => showClosed || i.column !== 'closed')
+  // The rail speaks here too: an epic opens as its own graph — the epic and
+  // every descendant; «Все задачи» keeps the whole-project map. On top of the
+  // scope, the closed toggle and the search apply; a match keeps its ancestors
+  // so the tree keeps its shape.
+  let scope
+  if (sel === 'all') scope = data.issues
+  else if (sel === 'loose') scope = data.loose
+  else if (sel.startsWith('kind:')) scope = data.issues.filter((i) => i.kind === sel.slice(5))
+  else {
+    const ids = new Set([sel])
+    let grew = true
+    while (grew) {
+      grew = false
+      for (const i of data.issues)
+        if (i.parent && ids.has(i.parent) && !ids.has(i.id)) {
+          ids.add(i.id)
+          grew = true
+        }
+    }
+    scope = data.issues.filter((i) => ids.has(i.id))
+  }
+  let base = scope.filter((i) => showClosed || i.column !== 'closed')
   if (qTasks) {
     const all = new Map(data.issues.map((i) => [i.id, i]))
     const keep = new Set()
@@ -422,9 +438,10 @@ function renderGraph() {
     }
     base = base.filter((i) => keep.has(i.id))
   }
-  if (!base.length) return box.appendChild(el('p', 'graph__empty', emptyMsg(data.issues)))
+  if (!base.length) return box.appendChild(el('p', 'graph__empty', emptyMsg(scope)))
 
-  const NW = 260, NH = 70, GX = 96, GY = 10, CLUSTER = 30, PAD = 28
+  // ponytail: раскладка на сетке 4px по референсу diagram-design.
+  const NW = 260, NH = 72, GX = 96, GY = 12, CLUSTER = 32, PAD = 28
   const byId = new Map(base.map((i) => [i.id, i]))
   const kidsOf = (id) =>
     base.filter((i) => i.parent === id).sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))
@@ -432,7 +449,7 @@ function renderGraph() {
 
   // pos holds pixel coordinates of each node's top-left corner.
   const pos = new Map()
-  let cursor = PAD + 6
+  let cursor = PAD + 8
   let maxDepth = 0
   const place = (i, depth) => {
     maxDepth = Math.max(maxDepth, depth)
@@ -448,6 +465,8 @@ function renderGraph() {
     return mid
   }
 
+  // Roots are the scope's own top nodes: groups whose parent is outside the
+  // scope — for an epic selection that is the epic itself.
   for (const g of data.groups.filter((g) => byId.has(g.id) && (!g.parent || !byId.has(g.parent)))) {
     place(byId.get(g.id), 0)
     cursor += CLUSTER
@@ -459,8 +478,11 @@ function renderGraph() {
   const rest = base.filter((i) => !pos.has(i.id))
   if (rest.length) {
     const cols = Math.max(1, Math.min(3, Math.ceil(rest.length / 8)))
-    labels.push({ text: 'Без эпика', y: cursor })
-    cursor += 26
+    // A kind slice is just a grid — «Без эпика» would be a false caption there.
+    if (sel === 'all' || sel === 'loose') {
+      labels.push({ text: 'Без эпика', y: cursor })
+      cursor += 28
+    }
     rest.forEach((i, n) => {
       pos.set(i.id, { x: PAD + (n % cols) * (NW + 24), y: cursor + Math.floor(n / cols) * (NH + GY) })
     })
@@ -954,10 +976,18 @@ function linkDocs() {
   }
 }
 
-/** The picture's age, always on screen: the last date stays put, «обновляю…» rides beside it. */
+/** The picture's age, always on screen: the stamp is the REAL bd scan time the
+    server recorded, so a disk-cached morning answer says yesterday's date. */
 let freshAt = ''
-function setFresh(state) {
-  if (state !== 'loading') freshAt = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+const fmtWhen = (t) => {
+  const d = new Date(t)
+  const hm = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  return d.toDateString() === new Date().toDateString()
+    ? hm
+    : d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ' ' + hm
+}
+function setFresh(state, scannedAt) {
+  if (scannedAt) freshAt = fmtWhen(scannedAt)
   const stamp = freshAt ? 'обновлено ' + freshAt : ''
   $('fresh').textContent = state === 'loading' ? (stamp ? stamp + ' · обновляю…' : 'обновляю…') : stamp
 }
@@ -986,7 +1016,10 @@ async function load() {
 
   const docsJob = get('docs').then((d) => {
     if (!d) return
-    data = { ...data, ...d }
+    // Служебные поля кэша принадлежат board-ответу: docs-овские scanMs/scannedAt
+    // затёрли бы цену настоящего скана и сломали бы адаптивный опрос.
+    const { scanMs, scannedAt, stale, ...docsData } = d
+    data = { ...data, ...docsData }
     // Tasks come from the nearest .beads upwards, which may not be this folder.
     $('crumb').textContent = data.workspace ? `задачи из ${data.workspace}` : ''
     linkDocs()
@@ -1004,9 +1037,13 @@ async function load() {
     renderTasks()
     if (view === 'docs') renderDocs()
     if (task) data.issues.some((i) => i.id === task) ? openTask(task) : closeTask()
-    // A cached answer served mid-rescan keeps saying «обновляю…» until the poll
-    // brings a fresh one.
-    setFresh(b.stale ? 'loading' : 'done')
+    // A cached answer served mid-rescan keeps saying «обновляю…» until a fresh
+    // one lands; short retries catch it without waiting for the slow poll.
+    setFresh(b.stale ? 'loading' : 'done', b.scannedAt)
+    if (b.stale)
+      setTimeout(() => {
+        if (!loading && editing == null && !document.hidden && want === root) load().catch(() => {})
+      }, 3000)
   })
 
   try {
@@ -1087,7 +1124,15 @@ await loadProjects()
 await load()
 // A refresh on a large workspace can take a minute; polling a hidden tab, or
 // stacking a second scan on the first, only ever made it slower. Editing text
-// never gets its ground pulled out from under it.
+// never gets its ground pulled out from under it. A scan slower than three
+// seconds drops the routine poll to once a minute — the refresh button and the
+// return to the tab stay instant, so freshness rides on those instead.
+let polledAt = Date.now()
 setInterval(() => {
-  if (!loading && editing == null && !document.hidden) load().catch(() => {})
-}, 10000)
+  const every = (data.scanMs || 0) > 3000 ? 60000 : 10000
+  if (Date.now() - polledAt < every) return
+  if (!loading && editing == null && !document.hidden) {
+    polledAt = Date.now()
+    load().catch(() => {})
+  }
+}, 5000)

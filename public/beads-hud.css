@@ -409,7 +409,7 @@ tr.is-closed .tbl__title{color:var(--dim);text-decoration:line-through;text-deco
 .graph__edges .edge--block{stroke:var(--stop);opacity:.75}
 .gnode{
   /* Width and height match the NW/NH layout constants in renderGraph — edges anchor to the middle. */
-  position:absolute;width:260px;height:70px;overflow:hidden;text-align:left;cursor:pointer;
+  position:absolute;width:260px;height:72px;overflow:hidden;text-align:left;cursor:pointer;
   background:var(--card);border:1px solid var(--card-edge);border-radius:var(--r-card);
   padding:9px 12px;color:inherit;
   box-shadow:0 1px 3px rgba(20,25,60,.07),0 6px 16px -8px rgba(20,25,60,.12),var(--specular);
