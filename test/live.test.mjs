@@ -100,14 +100,20 @@ function setup(opts = {}) {
   const saves = []
   const logs = []
   const scans = { n: 0 }
+  const saveAttempts = { n: 0 }
   const bag = {
     version: opts.version ?? '1.3.1',
+    versionCode: opts.versionCode ?? 0,
+    versionStdout: opts.versionStdout,
     journal: opts.journal ?? 'true',
     identity: opts.identity ?? 'clone-a',
     checkpoint: opts.checkpoint ?? null,
     drain: opts.drain || (() => ({ stdout: '', stderr: '', code: 0 })),
     scanState: opts.scanState || (() => emptyState()),
+    hang: opts.hang || null,
+    failSaves: opts.failSaves || 0,
   }
+  const follows = () => spawned.filter((s) => s.args.includes('--follow'))
   function follower() {
     return new Follower({
       workspace: opts.workspace || '/home/box/proj',
@@ -116,26 +122,49 @@ function setup(opts = {}) {
       clearTimer: clock.clearTimer,
       async exec(args) {
         execLog.push(args)
-        if (args[0] === 'version') return { stdout: JSON.stringify({ version: bag.version }), stderr: '', code: 0 }
+        if (bag.hang === args[0]) return new Promise(() => {})
+        if (args[0] === 'version') {
+          const stdout = bag.versionStdout != null ? bag.versionStdout : JSON.stringify({ version: bag.version })
+          return { stdout, stderr: '', code: bag.versionCode || 0 }
+        }
         if (args[0] === 'config') {
           return { stdout: JSON.stringify({ key: 'events-journal', value: bag.journal }), stderr: '', code: 0 }
         }
-        if (args[0] === 'events') return bag.drain(args)
         return { stdout: '', stderr: 'unexpected ' + args.join(' '), code: 1 }
       },
       spawn(args) {
         const child = fakeChild()
         spawned.push({ args, child })
+        // Drain is a one-shot child. Listeners attach before this microtask.
+        if (!args.includes('--follow')) {
+          const res = bag.drain(args) || { stdout: '', stderr: '', code: 0 }
+          queueMicrotask(() => {
+            if (child.killed) return
+            if (res.stdout) child.stdout.emit('data', res.stdout)
+            if (res.stderr) child.stderr.emit('data', res.stderr)
+            child.emit('exit', res.code || 0, null)
+          })
+        }
         return child
       },
       async scan() {
         scans.n++
+        if (bag.hang === 'scan') {
+          const cur = follows().at(-1)
+          scans.aliveAtHang = cur ? cur.child.killed === false : false
+          return new Promise(() => {})
+        }
         return bag.scanState()
       },
       async loadCheckpoint() {
         return bag.checkpoint
       },
       async saveCheckpoint(payload) {
+        saveAttempts.n++
+        if (bag.failSaves > 0) {
+          bag.failSaves--
+          throw new Error('disk')
+        }
         saves.push(payload)
         bag.checkpoint = payload
       },
@@ -151,9 +180,11 @@ function setup(opts = {}) {
       backoffMax: opts.backoffMax ?? 600_000,
       healthyMs: opts.healthyMs ?? 60_000,
       checkpointDebounceMs: opts.checkpointDebounceMs ?? 1000,
+      opTimeoutMs: opts.opTimeoutMs ?? 120_000,
+      lineCap: opts.lineCap,
     })
   }
-  return { clock, spawned, execLog, saves, logs, scans, bag, follower }
+  return { clock, spawned, execLog, saves, logs, scans, saveAttempts, bag, follower, follows }
 }
 
 async function settled() {
@@ -224,7 +255,7 @@ describe('reducer', () => {
     assert.equal(state.deps.size, 0)
   })
 
-  test('hides wisps, gates, infra and templates, and ignores unknown ops', () => {
+  test('hides wisps, gates, infra and templates; an unknown op with an issue replaces it', () => {
     for (const issue_type of ['gate', 'agent', 'role', 'message']) {
       const state = emptyState()
       assert.equal(applyEvent(state, { op: 'create', issue_id: 'h', issue: issue('h', { issue_type }) }), true)
@@ -241,9 +272,48 @@ describe('reducer', () => {
     assert.equal(state.issues.has('a'), false)
     applyEvent(state, { op: 'create', issue_id: 'a', issue: issue('a', { title: 'keep' }) })
     assert.equal(applyEvent(state, { op: 'rename', issue_id: 'a', issue: issue('a', { title: 'nope' }) }), false)
-    assert.equal(state.issues.get('a').title, 'keep')
+    assert.equal(state.issues.get('a').title, 'nope')
+    assert.equal(applyEvent(state, { op: 'weird', issue: 'garbage' }), false)
+    assert.equal(applyEvent(state, { op: 'weird' }), false)
+    assert.equal(state.issues.get('a').title, 'nope')
     assert.equal(applyEvent(state, { op: 'comment', issue_id: 'a', issue: issue('a', { title: 'noted' }) }), true)
     assert.equal(state.issues.get('a').title, 'noted')
+  })
+
+  test('a scan drops the same hidden rows the event path drops', () => {
+    const state = stateFromScan({
+      open: [issue('a', { title: 'A' }), issue('g', { issue_type: 'gate' })],
+      closed: [issue('t', { is_template: true })],
+      graph: [
+        {
+          Issues: [issue('e', { ephemeral: true }), issue('m', { issue_type: 'message' }), issue('a', { title: 'from-graph' })],
+          Dependencies: [{ issue_id: 'a', depends_on_id: 'g', type: 'blocks' }],
+        },
+      ],
+    })
+    assert.deepEqual([...state.issues.keys()], ['a'])
+    assert.equal(state.issues.get('a').title, 'A')
+    assert.equal(state.deps.size, 1)
+  })
+
+  test('deriveBoard does not write back onto the stored issues', () => {
+    const state = emptyState()
+    applyEvent(state, { op: 'create', issue_id: 'a', issue: issue('a', { title: 'A' }) })
+    const raw = state.issues.get('a')
+    const board = deriveBoard(state)
+    const card = board.issues.find((item) => item.id === 'a')
+    assert.equal(card.column, 'todo')
+    assert.equal(card.kind, 'task')
+    assert.equal(card.parent, null)
+    assert.notEqual(card, raw)
+    assert.equal(raw.column, undefined)
+    assert.equal(raw.kind, undefined)
+    assert.equal(raw.parent, undefined)
+    assert.equal(raw.blockedBy, undefined)
+    card.title = 'touched'
+    assert.equal(raw.title, 'A')
+    deriveBoard(state)
+    assert.equal(raw.column, undefined)
   })
 
   test('event-built and scan-built boards match, including the blocked column', () => {
@@ -317,19 +387,62 @@ describe('version gate', () => {
 
 describe('follower', () => {
   test('bd older than 1.3 stays on the poll path', async () => {
-    for (const version of ['1.2.9', 'not-a-version']) {
-      const env = setup({ version })
+    const env = setup({ version: '1.2.9' })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'poll')
+      assert.equal(follower.reason, 'bd-too-old')
+      assert.equal(env.scans.n, 0)
+      assert.equal(env.spawned.length, 0)
+      assert.match(env.logs[0], /beads-hud · poll · \/home\/box\/proj · bd-too-old/)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('a failed or unparsable bd version is bd-unavailable and retries', async () => {
+    for (const opts of [{ version: 'not-a-version' }, { version: '' }, { versionStdout: 'nope' }, { version: '1.2.9', versionCode: 1 }]) {
+      const env = setup({ ...opts, backoffStart: 1000, configRecheckMs: 600_000, healthyMs: 600_000, reconcileMs: 600_000 })
       const follower = env.follower()
       try {
         await follower.start()
         assert.equal(follower.mode, 'poll')
-        assert.equal(follower.reason, 'bd-too-old')
+        assert.equal(follower.reason, 'bd-unavailable')
         assert.equal(env.scans.n, 0)
         assert.equal(env.spawned.length, 0)
-        assert.match(env.logs[0], /beads-hud · poll · \/home\/box\/proj · bd-too-old/)
+        assert.match(env.logs[0], /beads-hud · poll · \/home\/box\/proj · bd-unavailable/)
+        await env.clock.advance(999)
+        assert.equal(env.execLog.filter((args) => args[0] === 'version').length, 1)
+        await env.clock.advance(1)
+        assert.equal(env.execLog.filter((args) => args[0] === 'version').length, 2)
+        assert.equal(follower.reason, 'bd-unavailable')
       } finally {
         await follower.stop()
       }
+    }
+  })
+
+  test('a hung bd version ends in poll with the retry armed', { timeout: 5000 }, async () => {
+    const env = setup({
+      hang: 'version',
+      opTimeoutMs: 40,
+      backoffStart: 1000,
+      configRecheckMs: 600_000,
+      healthyMs: 600_000,
+      reconcileMs: 600_000,
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'poll')
+      assert.equal(follower.reason, 'bd-unavailable')
+      env.bag.hang = null
+      await env.clock.advance(1000)
+      assert.equal(follower.mode, 'events')
+      assert.equal(env.follows().length, 1)
+    } finally {
+      await follower.stop()
     }
   })
 
@@ -362,10 +475,53 @@ describe('follower', () => {
       await follower.start()
       assert.equal(follower.mode, 'poll')
       assert.equal(follower.reason, 'journal-disabled')
-      assert.equal(env.scans.n, 1)
-      assert.equal(env.spawned.length, 0)
+      // The note is learned from the drain, before any scan.
+      assert.equal(env.scans.n, 0)
+      assert.equal(env.follows().length, 0)
     } finally {
       await follower.stop()
+    }
+  })
+
+  test('a non-JSON stdout note counts, a record that quotes it does not', async () => {
+    const noted = setup({
+      drain: () => ({
+        stdout: "note: the events journal is disabled for this workspace\n",
+        stderr: '',
+        code: 0,
+      }),
+    })
+    const fromNote = noted.follower()
+    try {
+      await fromNote.start()
+      assert.equal(fromNote.mode, 'poll')
+      assert.equal(fromNote.reason, 'journal-disabled')
+    } finally {
+      await fromNote.stop()
+    }
+
+    const quoted = setup({
+      drain: () => ({
+        stdout:
+          JSON.stringify({
+            seq: 1,
+            op: 'create',
+            issue_id: 'a',
+            issue: issue('a', { title: 'events journal is disabled' }),
+          }) + '\n',
+        stderr: '',
+        code: 0,
+      }),
+      scanState: () => emptyState(),
+    })
+    const fromRecord = quoted.follower()
+    try {
+      await fromRecord.start()
+      assert.equal(fromRecord.mode, 'events')
+      assert.equal(fromRecord.seq, 1)
+      assert.equal(fromRecord.state.issues.has('a'), false)
+    } finally {
+      await fromRecord.stop()
     }
   })
 
@@ -375,7 +531,7 @@ describe('follower', () => {
     try {
       await follower.start()
       assert.equal(follower.mode, 'events')
-      const child = env.spawned[0].child
+      const child = env.follows()[0].child
       child.stderr.emit('data', 'note: the events journal is dis')
       assert.equal(follower.mode, 'events')
       child.stderr.emit('data', "abled for this workspace (enable with 'bd config set events-journal true')\n")
@@ -394,14 +550,14 @@ describe('follower', () => {
       await follower.start()
       assert.equal(follower.mode, 'events')
       assert.match(env.logs[0], /beads-hud · events · \/home\/box\/proj · seq 0/)
-      env.spawned[0].child.emit('exit', 0, null)
+      env.follows()[0].child.emit('exit', 0, null)
       assert.equal(follower.mode, 'poll')
       assert.equal(follower.reason, 'events-exited')
       await env.clock.advance(4999)
       assert.equal(follower.mode, 'poll')
       await env.clock.advance(1)
       assert.equal(follower.mode, 'events')
-      assert.equal(env.spawned.length, 2)
+      assert.equal(env.follows().length, 2)
       assert.match(env.logs.at(-1), /beads-hud · events · \/home\/box\/proj · seq 0/)
     } finally {
       await follower.stop()
@@ -413,7 +569,7 @@ describe('follower', () => {
     const follower = env.follower()
     try {
       await follower.start()
-      env.spawned[0].child.emit('error', new Error('boom'))
+      env.follows()[0].child.emit('error', new Error('boom'))
       assert.equal(follower.mode, 'poll')
       assert.equal(follower.reason, 'events-error')
     } finally {
@@ -424,7 +580,7 @@ describe('follower', () => {
     const second = again.follower()
     try {
       await second.start()
-      again.spawned[0].child.emit('exit', 1, null)
+      again.follows()[0].child.emit('exit', 1, null)
       assert.equal(second.mode, 'poll')
       assert.equal(second.reason, 'events-error')
     } finally {
@@ -456,8 +612,10 @@ describe('follower', () => {
       await follower.start()
       assert.equal(follower.mode, 'events')
       assert.equal(follower.seq, 11)
-      assert.equal(env.scans.n, 2)
-      assert.deepEqual(env.spawned.at(-1).args, ['events', 'tail', '--since', '11', '--follow', '--json'])
+      // Head comes from the truncation object; the scan runs once after that.
+      assert.equal(env.scans.n, 1)
+      assert.equal(follower.state.issues.size, 0)
+      assert.deepEqual(env.follows().at(-1).args, ['events', 'tail', '--since', '11', '--follow', '--json'])
       assert.match(env.logs[0], /beads-hud · events · \/home\/box\/proj · seq 11/)
     } finally {
       await follower.stop()
@@ -482,13 +640,14 @@ describe('follower', () => {
         head: 12,
         since: 0,
       })
-      env.spawned[0].child.stdout.emit('data', line + '\n')
+      const child = env.follows()[0].child
+      child.stdout.emit('data', line + '\n')
       await settled()
       assert.equal(follower.mode, 'events')
       assert.equal(follower.seq, 12)
       assert.equal(env.scans.n, 2)
-      assert.equal(env.spawned[0].child.killed, true)
-      assert.deepEqual(env.spawned.at(-1).args, ['events', 'tail', '--since', '12', '--follow', '--json'])
+      assert.equal(child.killed, true)
+      assert.deepEqual(env.follows().at(-1).args, ['events', 'tail', '--since', '12', '--follow', '--json'])
     } finally {
       await follower.stop()
     }
@@ -501,7 +660,7 @@ describe('follower', () => {
       await follower.start()
       const line1 = JSON.stringify({ seq: 1, op: 'create', issue_id: 'a', issue: issue('a', { title: 'A' }) })
       const line2 = JSON.stringify({ seq: 2, op: 'create', issue_id: 'b', issue: issue('b', { title: 'B' }) })
-      const child = env.spawned[0].child
+      const child = env.follows()[0].child
       child.stdout.emit('data', Buffer.from(line1.slice(0, 15)))
       assert.equal(follower.state.issues.size, 0)
       child.stdout.emit('data', Buffer.from(line1.slice(15) + '\n' + line2 + '\n'))
@@ -530,7 +689,7 @@ describe('follower', () => {
     try {
       await first.start()
       const line = JSON.stringify({ seq: 3, op: 'create', issue_id: 'a', issue: issue('a', { title: 'A' }) }) + '\n'
-      env.spawned[0].child.stdout.emit('data', line)
+      env.follows()[0].child.stdout.emit('data', line)
       assert.equal(env.saves.length, 0)
       await env.clock.advance(999)
       assert.equal(env.saves.length, 0)
@@ -560,10 +719,22 @@ describe('follower', () => {
     const second = env.follower()
     try {
       await second.start()
+      // The drain learned head 4 and did not replay those snapshots over the scan.
       assert.equal(second.state.issues.get('a').title, 'SCAN')
-      assert.equal(second.state.issues.get('b').title, 'B')
+      assert.equal(second.state.issues.has('b'), false)
       assert.equal(second.seq, 4)
-      assert.deepEqual(env.spawned.at(-1).args, ['events', 'tail', '--since', '4', '--follow', '--json'])
+      assert.deepEqual(env.follows().at(-1).args, ['events', 'tail', '--since', '4', '--follow', '--json'])
+      env.follows().at(-1).child.stdout.emit(
+        'data',
+        JSON.stringify({ seq: 5, op: 'create', issue_id: 'b', issue: issue('b', { title: 'B' }) }) + '\n',
+      )
+      assert.equal(second.state.issues.get('b').title, 'B')
+      assert.equal(second.seq, 5)
+      env.follows().at(-1).child.stdout.emit(
+        'data',
+        JSON.stringify({ seq: 4, op: 'update', issue_id: 'a', issue: issue('a', { title: 'OLD' }) }) + '\n',
+      )
+      assert.equal(second.state.issues.get('a').title, 'SCAN')
     } finally {
       await second.stop()
     }
@@ -574,7 +745,7 @@ describe('follower', () => {
     const follower = env.follower()
     try {
       await follower.start()
-      env.spawned[0].child.stdout.emit(
+      env.follows()[0].child.stdout.emit(
         'data',
         JSON.stringify({ seq: 4, op: 'create', issue_id: 'a', issue: issue('a') }) + '\n',
       )
@@ -604,7 +775,9 @@ describe('follower', () => {
       await follower.start()
       assert.equal(follower.seq, 20)
       assert.equal(follower.state.issues.has('z'), false)
-      assert.deepEqual(env.spawned[0].args, ['events', 'tail', '--since', '20', '--follow', '--json'])
+      const drain = env.spawned.find((s) => s.args[0] === 'events' && !s.args.includes('--follow'))
+      assert.deepEqual(drain.args, ['events', 'tail', '--since', '20', '--json'])
+      assert.deepEqual(env.follows()[0].args, ['events', 'tail', '--since', '20', '--follow', '--json'])
     } finally {
       await follower.stop()
     }
@@ -628,8 +801,10 @@ describe('follower', () => {
     const follower = env.follower()
     try {
       await follower.start()
-      assert.equal(follower.state.issues.get('a').title, 'FROM-JOURNAL')
+      // Identity mismatch restarts from 0, but the drain is not applied over the scan.
+      assert.equal(follower.state.issues.get('a').title, 'SCAN')
       assert.equal(follower.seq, 8)
+      assert.deepEqual(env.follows().at(-1).args, ['events', 'tail', '--since', '8', '--follow', '--json'])
     } finally {
       await follower.stop()
     }
@@ -647,7 +822,7 @@ describe('follower', () => {
       await env.clock.advance(1)
       assert.equal(follower.mode, 'poll')
       assert.equal(follower.reason, 'journal-disabled')
-      assert.equal(env.spawned[0].child.killed, true)
+      assert.equal(env.follows()[0].child.killed, true)
       assert.match(env.logs.at(-1), /beads-hud · poll · \/home\/box\/proj · journal-disabled/)
     } finally {
       await follower.stop()
@@ -659,18 +834,18 @@ describe('follower', () => {
     const follower = env.follower()
     try {
       await follower.start()
-      env.spawned[0].child.emit('exit', 0, null)
+      env.follows()[0].child.emit('exit', 0, null)
       assert.equal(follower.mode, 'poll')
       await env.clock.advance(1000)
       assert.equal(follower.mode, 'events')
       await env.clock.advance(5000)
-      env.spawned[1].child.emit('exit', 0, null)
+      env.follows()[1].child.emit('exit', 0, null)
       assert.equal(follower.mode, 'poll')
       await env.clock.advance(999)
       assert.equal(follower.mode, 'poll')
       await env.clock.advance(1)
       assert.equal(follower.mode, 'events')
-      assert.equal(env.spawned.length, 3)
+      assert.equal(env.follows().length, 3)
     } finally {
       await follower.stop()
     }
@@ -692,15 +867,351 @@ describe('follower', () => {
     try {
       await follower.start()
       assert.equal(follower.board().issues.find((item) => item.id === 'a').title, 'before')
-      const first = env.spawned[0].child
+      const first = env.follows()[0].child
+      let aliveAtScan = null
+      const prevScan = env.bag.scanState
+      env.bag.scanState = () => {
+        aliveAtScan = first.killed === false
+        return prevScan()
+      }
       title = 'after'
       await env.clock.advance(1000)
+      assert.equal(aliveAtScan, true)
       assert.equal(follower.mode, 'events')
       assert.equal(follower.board().issues.find((item) => item.id === 'a').title, 'after')
       assert.equal(first.killed, true)
-      assert.equal(env.spawned.length, 2)
+      assert.equal(env.follows().length, 2)
       assert.equal(env.scans.n, 2)
       assert.equal(env.logs.length, 1)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('a reconcile scan failure drops to poll and retries', async () => {
+    let calls = 0
+    const env = setup({
+      reconcileMs: 1000,
+      backoffStart: 5000,
+      configRecheckMs: 600_000,
+      healthyMs: 600_000,
+      scanState: () => {
+        calls++
+        if (calls === 2) {
+          env.scans.aliveAtScan = env.follows().at(-1).child.killed === false
+          throw new Error('scan down')
+        }
+        return emptyState()
+      },
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      const child = env.follows()[0].child
+      await env.clock.advance(1000)
+      assert.equal(env.scans.aliveAtScan, true)
+      assert.equal(follower.mode, 'poll')
+      assert.equal(follower.reason, 'events-error')
+      assert.equal(child.killed, true)
+      await env.clock.advance(4999)
+      assert.equal(follower.mode, 'poll')
+      await env.clock.advance(1)
+      assert.equal(follower.mode, 'events')
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('a hung reconcile scan ends in poll instead of a frozen live board', { timeout: 5000 }, async () => {
+    const env = setup({
+      reconcileMs: 1000,
+      backoffStart: 1000,
+      opTimeoutMs: 40,
+      configRecheckMs: 600_000,
+      healthyMs: 600_000,
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      const child = env.follows()[0].child
+      env.bag.hang = 'scan'
+      await env.clock.advance(1000)
+      assert.equal(env.scans.aliveAtHang, true)
+      assert.equal(follower.mode, 'poll')
+      assert.equal(follower.reason, 'events-error')
+      assert.equal(child.killed, true)
+      env.bag.hang = null
+      await env.clock.advance(1000)
+      assert.equal(follower.mode, 'events')
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('baseline does not replay the drain, and a later record is applied', async () => {
+    const env = setup({
+      scanState: () => {
+        const state = emptyState()
+        applyEvent(state, { op: 'create', issue_id: 'a', issue: issue('a', { title: 'SCAN' }) })
+        return state
+      },
+      drain: () => ({
+        stdout:
+          [
+            JSON.stringify({ seq: 1, op: 'update', issue_id: 'a', issue: issue('a', { title: 'OLD' }) }),
+            JSON.stringify({ seq: 2, op: 'create', issue_id: 'b', issue: issue('b', { title: 'B' }) }),
+          ].join('\n') + '\n',
+        stderr: '',
+        code: 0,
+      }),
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.state.issues.get('a').title, 'SCAN')
+      assert.equal(follower.state.issues.has('b'), false)
+      assert.equal(follower.seq, 2)
+      const child = env.follows()[0].child
+      child.stdout.emit('data', JSON.stringify({ seq: 3, op: 'create', issue_id: 'b', issue: issue('b', { title: 'B' }) }) + '\n')
+      assert.equal(follower.state.issues.get('b').title, 'B')
+      assert.equal(follower.seq, 3)
+      const shown = follower.board()
+      assert.equal(shown.issues.find((item) => item.id === 'a').column, 'todo')
+      assert.equal(follower.state.issues.get('a').column, undefined)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('truncation after a preceding record still wins the head', async () => {
+    const pretty = JSON.stringify(
+      { code: 'events_journal_truncated', error: 'missing prefix {seq < floor}', floor: 1, head: 9, since: 0 },
+      null,
+      2,
+    )
+    const env = setup({
+      scanState: () => {
+        const state = emptyState()
+        applyEvent(state, { op: 'create', issue_id: 'a', issue: issue('a', { title: 'scan' }) })
+        return state
+      },
+      drain: () => ({
+        stdout:
+          JSON.stringify({ seq: 2, op: 'create', issue_id: 'a', issue: issue('a', { title: 'stale' }) }) +
+          '\nwarning: see {this}\n' +
+          pretty +
+          '\n',
+        stderr: '',
+        code: 1,
+      }),
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'events')
+      assert.equal(follower.seq, 9)
+      assert.equal(follower.state.issues.get('a').title, 'scan')
+      assert.deepEqual(env.follows().at(-1).args, ['events', 'tail', '--since', '9', '--follow', '--json'])
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('pretty-printed multi-line truncation on follow recovers in place', async () => {
+    const env = setup()
+    const follower = env.follower()
+    try {
+      await follower.start()
+      const pretty = JSON.stringify(
+        {
+          code: 'events_journal_truncated',
+          error: 'missing prefix {seq < floor}',
+          floor: 4,
+          head: 15,
+          since: 0,
+        },
+        null,
+        2,
+      )
+      const child = env.follows()[0].child
+      child.stdout.emit('data', 'warning: before\n' + pretty + '\n')
+      child.emit('exit', 1, null)
+      await settled()
+      assert.equal(follower.mode, 'events')
+      assert.equal(follower.reason, null)
+      assert.equal(follower.seq, 15)
+      assert.equal(env.scans.n, 2)
+      assert.equal(child.killed, false)
+      assert.deepEqual(env.follows().at(-1).args, ['events', 'tail', '--since', '15', '--follow', '--json'])
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('a late exit from an older killed child is not a failure', async () => {
+    const line = (head) =>
+      JSON.stringify({ code: 'events_journal_truncated', error: 'missing prefix {seq < floor}', floor: 1, head, since: 0 })
+    const env = setup()
+    const follower = env.follower()
+    try {
+      await follower.start()
+      const first = env.follows()[0].child
+      first.stdout.emit('data', line(7) + '\n')
+      await settled()
+      const second = env.follows()[1].child
+      second.stdout.emit('data', line(9) + '\n')
+      await settled()
+      assert.equal(first.killed, true)
+      assert.equal(second.killed, true)
+      assert.equal(follower.seq, 9)
+      first.emit('exit', 1, null)
+      second.emit('exit', 1, null)
+      assert.equal(follower.mode, 'events')
+      assert.equal(follower.reason, null)
+      assert.equal(env.follows().at(-1).child.killed, false)
+      assert.equal(env.follows().length, 3)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('truncation recovery does not spawn a second follower while one is in flight', async () => {
+    let release
+    const env = setup({ reconcileMs: 1000, configRecheckMs: 600_000, healthyMs: 600_000 })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      env.bag.scanState = () =>
+        new Promise((resolve) => {
+          release = () => resolve(emptyState())
+        })
+      const child = env.follows()[0].child
+      const line = JSON.stringify({ code: 'events_journal_truncated', error: 'x', floor: 1, head: 7, since: 0 })
+      child.stdout.emit('data', line + '\n')
+      await settled()
+      child.stdout.emit('data', line.replace('"head":7', '"head":8') + '\n')
+      await env.clock.advance(1000)
+      assert.equal(env.follows().length, 1)
+      assert.equal(follower.mode, 'events')
+      release()
+      await settled()
+      assert.equal(follower.seq, 7)
+      assert.equal(env.follows().length, 2)
+      assert.equal(child.killed, true)
+      assert.equal(env.follows()[1].child.killed, false)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('an overlong line is skipped and the follower stays on events', async () => {
+    // The cap sits between a split garbage line and a real record, so the
+    // record after the skipped line is still applied.
+    const env = setup({ lineCap: 160 })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      const child = env.follows()[0].child
+      child.stdout.emit('data', 'x'.repeat(400))
+      child.stdout.emit('data', 'yyy\n')
+      child.stdout.emit(
+        'data',
+        JSON.stringify({ seq: 1, op: 'create', issue_id: 'a', issue: issue('a', { title: 'A' }) }) + '\n',
+      )
+      assert.equal(follower.mode, 'events')
+      assert.equal(follower.state.issues.get('a').title, 'A')
+      assert.equal(follower.seq, 1)
+      assert.ok(env.logs.some((line) => /overlong/.test(line)))
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('drain skips an overlong line and still learns the head', async () => {
+    const env = setup({
+      lineCap: 160,
+      drain: () => ({
+        stdout:
+          'y'.repeat(400) +
+          '\n' +
+          JSON.stringify({ seq: 3, op: 'create', issue_id: 'a', issue: issue('a', { title: 'nope' }) }) +
+          '\n',
+        stderr: '',
+        code: 0,
+      }),
+      scanState: () => {
+        const state = emptyState()
+        applyEvent(state, { op: 'create', issue_id: 'a', issue: issue('a', { title: 'scan' }) })
+        return state
+      },
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'events')
+      assert.equal(follower.seq, 3)
+      assert.equal(follower.state.issues.get('a').title, 'scan')
+      assert.ok(env.logs.some((line) => /overlong/.test(line)))
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('a failed checkpoint write is retried on the debounce timer', async () => {
+    const env = setup({ failSaves: 1, checkpointDebounceMs: 1000, configRecheckMs: 600_000 })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      env.follows()[0].child.stdout.emit(
+        'data',
+        JSON.stringify({ seq: 4, op: 'create', issue_id: 'a', issue: issue('a') }) + '\n',
+      )
+      await env.clock.advance(1000)
+      assert.equal(env.saves.length, 0)
+      assert.equal(env.saveAttempts.n, 1)
+      await env.clock.advance(1000)
+      assert.equal(env.saves.at(-1).seq, 4)
+      assert.equal(env.saveAttempts.n, 2)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('checkpoint retries stop after the bound, and a new record tries again', async () => {
+    const env = setup({ failSaves: 100, checkpointDebounceMs: 1000, configRecheckMs: 600_000, healthyMs: 600_000, reconcileMs: 600_000 })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      const child = env.follows()[0].child
+      child.stdout.emit('data', JSON.stringify({ seq: 1, op: 'create', issue_id: 'a', issue: issue('a') }) + '\n')
+      for (let i = 0; i < 6; i++) await env.clock.advance(1000)
+      assert.equal(env.saveAttempts.n, 5)
+      assert.equal(env.saves.length, 0)
+      child.stdout.emit('data', JSON.stringify({ seq: 2, op: 'update', issue_id: 'a', issue: issue('a', { title: 'B' }) }) + '\n')
+      await env.clock.advance(1000)
+      assert.equal(env.saveAttempts.n, 6)
+      assert.equal(env.saves.length, 0)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('an unknown op on the follow stream updates the memoized board', async () => {
+    const env = setup()
+    const follower = env.follower()
+    try {
+      await follower.start()
+      const child = env.follows()[0].child
+      child.stdout.emit('data', JSON.stringify({ seq: 1, op: 'create', issue_id: 'a', issue: issue('a', { title: 'A' }) }) + '\n')
+      const first = follower.board()
+      child.stdout.emit(
+        'data',
+        JSON.stringify({ seq: 2, op: 'future-op', issue_id: 'a', issue: issue('a', { title: 'B' }) }) + '\n',
+      )
+      assert.equal(follower.state.issues.get('a').title, 'B')
+      assert.notEqual(follower.board(), first)
+      assert.equal(follower.board().issues.find((item) => item.id === 'a').title, 'B')
+      assert.equal(follower.state.issues.get('a').column, undefined)
     } finally {
       await follower.stop()
     }

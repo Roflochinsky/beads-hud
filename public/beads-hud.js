@@ -48,6 +48,9 @@ let waiting = false
 let doc = null
 let sheet = null
 let task = null
+// Last events board we actually painted, per folder. A 2s tick with the same
+// seq has nothing new; repainting the drawer resets its scroll.
+let liveSeen = null
 let editing = null
 
 /* ── Theme ─────────────────────────────────────────────────────── */
@@ -791,13 +794,16 @@ async function saveBlock(i, src) {
 
 /* ── Task drawer ───────────────────────────────────────────────── */
 
-function openTask(id) {
+function openTask(id, opts) {
   const i = data.issues.find((x) => x.id === id)
   if (!i) return
   task = id
   $('task').hidden = false
   $('task-id').textContent = i.id
   const body = $('task-body')
+  // A live tick rebuilds this node. Keeping the offset is what leaves a long
+  // description scrollable while events are flowing.
+  const keep = opts && opts.keepScroll ? body.scrollTop : 0
   body.replaceChildren()
   body.appendChild(el('h1', 'task__title', i.title))
 
@@ -865,7 +871,7 @@ function openTask(id) {
   $('task-move').hidden = i.status !== 'open'
   $('task-release').hidden = i.status !== 'in_progress'
   $('task-shut').textContent = closed ? 'Открыть заново' : 'Закрыть'
-  body.scrollTop = 0
+  body.scrollTop = keep
   if (view === 'board') renderTasks()
 }
 
@@ -1039,6 +1045,16 @@ async function load(opts) {
   if (wantBoard) {
     jobs.push(get('board').then((b) => {
       if (!b) return
+      // Same events cursor we already painted for this folder: the board did
+      // not change. Rebuilding the drawer here throws scrollTop back to 0.
+      if (b.live === 'events' && liveSeen && liveSeen.root === want && liveSeen.seq === b.seq) {
+        waiting = false
+        setFresh(b.stale ? 'loading' : 'done', b.scannedAt)
+        return
+      }
+      const prev = task && data.issues.find((i) => i.id === task)
+      const prevJson = prev ? JSON.stringify(prev) : null
+      const liveUpdate = b.live === 'events' && prevJson != null
       data = { ...data, ...b }
       waiting = false
       if (sel !== 'all' && sel !== 'loose' && !sel.startsWith('kind:') && !data.groups.some((g) => g.id === sel))
@@ -1047,7 +1063,13 @@ async function load(opts) {
       renderKinds()
       renderTasks()
       if (view === 'docs') renderDocs()
-      if (task) data.issues.some((i) => i.id === task) ? openTask(task) : closeTask()
+      if (task) {
+        const next = data.issues.find((i) => i.id === task)
+        if (!next) closeTask()
+        else if (!liveUpdate || JSON.stringify(next) !== prevJson) openTask(task, liveUpdate ? { keepScroll: true } : undefined)
+      }
+      if (b.live === 'events') liveSeen = { root: want, seq: b.seq }
+      else liveSeen = null
       // A cached answer served mid-rescan keeps saying «обновляю…» until a fresh
       // one lands; short retries catch it without waiting for the slow poll.
       setFresh(b.stale ? 'loading' : 'done', b.scannedAt)

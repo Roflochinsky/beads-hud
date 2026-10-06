@@ -62,14 +62,21 @@ async function bdJson(root, args, fallback) {
   }
 }
 
-// Exit 1 is how `bd events tail` reports a truncated journal, and the payload
-// is on stdout. The poll path still wants a thrown error; the follower does not.
+// A hung `bd version` / scan must not leave the follower in 'starting', or in
+// reconcile with the live tail already dead. Exit 1 is still how a truncated
+// journal is reported (payload on stdout); a killed child is a real failure.
+const BD_RUN_MS = 120 * 1000
 async function bdRun(root, args) {
   try {
-    const { stdout, stderr } = await run('bd', ['-C', root, ...args], { maxBuffer: 64 * 1024 * 1024 })
+    const { stdout, stderr } = await run('bd', ['-C', root, ...args], {
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: BD_RUN_MS,
+      killSignal: 'SIGKILL',
+    })
     return { stdout: stdout || '', stderr: stderr || '', code: 0 }
   } catch (e) {
     if (e.code === 'ENOENT') throw e
+    if (e.killed) throw e
     return {
       stdout: e.stdout ? e.stdout.toString() : '',
       stderr: e.stderr ? e.stderr.toString() : '',
@@ -445,12 +452,16 @@ function sweepIdleFollowers(now = Date.now()) {
   }
 }
 
-async function ensureFollower(root) {
-  const workspace = (await beadsRoot(root)) || root
+async function ensureFollower(workspace) {
+  // Shutdown already asked every child to die. A request in that window must
+  // not start another `bd events tail --follow`.
+  if (closing) return null
   const now = Date.now()
   let slot = followers.get(workspace)
   if (!slot) {
+    if (closing) return null
     while (followers.size >= EVENTS_MAX) evictOldestFollower()
+    if (closing) return null
     slot = { follower: createFollower(workspace), lastAsk: now }
     followers.set(workspace, slot)
     slot.follower.start().catch((e) => console.error(`beads-hud · follower · ${e.message}`))
@@ -476,7 +487,17 @@ async function boardResponse(rootIn) {
     const polled = await part('board', root)
     return { ...polled, live: 'poll', liveReason: 'disabled' }
   }
-  const follower = await ensureFollower(root)
+  // No .beads at all (not the same as "~/.beads exists but bd rejects it").
+  const workspace = await beadsRoot(root)
+  if (!workspace) {
+    const polled = await part('board', root)
+    return { ...polled, live: 'poll', liveReason: 'no-workspace' }
+  }
+  const follower = await ensureFollower(workspace)
+  if (!follower) {
+    const polled = await part('board', root)
+    return { ...polled, live: 'poll', liveReason: 'starting' }
+  }
   if (follower.mode === 'events' && follower.state) {
     const out = {
       ...follower.board(),
@@ -488,6 +509,12 @@ async function boardResponse(rootIn) {
     }
     rememberBoard(root, out)
     return out
+  }
+  // While the follower is scanning, part('board') would scan the same
+  // workspace again. A disk picture is enough until events are up.
+  if (follower.mode === 'starting') {
+    const disk = await readDisk(root)
+    if (disk) return { ...disk, stale: true, live: 'poll', liveReason: 'starting' }
   }
   const polled = await part('board', root)
   return { ...polled, live: 'poll', liveReason: follower.reason || 'starting' }
@@ -607,6 +634,17 @@ async function shutdown(why) {
   process.exit(0)
 }
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => shutdown(sig))
+// 'exit' is synchronous. An uncaught throw skips shutdown(), and the follow
+// children would outlive the server.
+process.on('exit', () => {
+  for (const slot of followers.values()) {
+    try {
+      slot.follower.killChild()
+    } catch {
+      /* already dying */
+    }
+  }
+})
 
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE') process.exit(0)
