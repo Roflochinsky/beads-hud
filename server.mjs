@@ -2,11 +2,12 @@
 import { createServer } from 'node:http'
 import { execFile, spawn as spawnChild } from 'node:child_process'
 import { promisify } from 'node:util'
+import { writeFileSync } from 'node:fs'
 import { readFile, readdir, stat, mkdir, writeFile, rm, rename } from 'node:fs/promises'
 import { join, relative, resolve, sep, extname, basename, dirname } from 'node:path'
 import { homedir } from 'node:os'
 import { marked } from 'marked'
-import { cloneIdentity, deriveBoard, eventsCheckpointPath, Follower, stateFromScan } from './lib/live.mjs'
+import { asPollBoard, cloneIdentity, deriveBoard, eventsCheckpointPath, Follower, makeDiskThrottle, stateFromScan } from './lib/live.mjs'
 
 const run = promisify(execFile)
 const HOME = homedir()
@@ -36,7 +37,6 @@ const followers = new Map()
 // idle sweep). Shutdown has to await these too, or the child and the
 // checkpoint flush can still be in flight when the process exits.
 const stopping = new Set()
-const diskWrote = new Map()
 
 const SKIP = new Set(['node_modules', '.git', '.beads', 'dist', 'build', '.next', '.astro', 'vendor', 'coverage'])
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' }
@@ -352,6 +352,18 @@ const MAKE = { docs: docsOf, board: boardOf }
 // картинка с видимым возрастом лучше пустоты.
 const diskPath = (root) => join(RUN_DIR, 'board-' + Buffer.from(root).toString('base64url') + '.json')
 const readDisk = (root) => readFile(diskPath(root), 'utf8').then(JSON.parse).catch(() => null)
+// One write per window. A board skipped inside the window is written when the
+// window ends (the helper unrefs that timer). Poll scans share the throttle
+// so a late events snapshot cannot clobber a newer scan.
+const diskThrottle = makeDiskThrottle({
+  now: () => Date.now(),
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  clearTimer: (timer) => clearTimeout(timer),
+  waitMs: DISK_WRITE_MS,
+  write: (root, board) => {
+    writeFile(diskPath(root), JSON.stringify(board)).catch(() => {})
+  },
+})
 
 async function part(kind, rootIn) {
   const root = safeRoot(rootIn)
@@ -368,7 +380,7 @@ async function part(kind, rootIn) {
         // показывает первое и подстраивает частоту опроса по второму.
         const out = { ...data, scannedAt: Date.now(), scanMs: Date.now() - t0 }
         cache.set(key, { at: Date.now(), data: out })
-        if (kind === 'board' && !data.error) writeFile(diskPath(root), JSON.stringify(out)).catch(() => {})
+        if (kind === 'board' && !data.error) diskThrottle.put(root, out)
         return out
       })
       .finally(() => inflight.delete(key))
@@ -473,31 +485,20 @@ async function ensureFollower(workspace) {
 }
 
 function rememberBoard(root, out) {
-  const now = Date.now()
-  const prev = diskWrote.get(root) || 0
-  if (now - prev < DISK_WRITE_MS) return
-  diskWrote.set(root, now)
-  writeFile(diskPath(root), JSON.stringify(out)).catch(() => {})
+  diskThrottle.put(root, out)
 }
 
 async function boardResponse(rootIn) {
   const root = safeRoot(rootIn)
   if (!root) return { error: 'Папка вне домашнего каталога' }
   if (process.env.BEADS_HUD_EVENTS === '0') {
-    const polled = await part('board', root)
-    return { ...polled, live: 'poll', liveReason: 'disabled' }
+    return asPollBoard(await part('board', root), 'disabled')
   }
   // No .beads at all (not the same as "~/.beads exists but bd rejects it").
   const workspace = await beadsRoot(root)
-  if (!workspace) {
-    const polled = await part('board', root)
-    return { ...polled, live: 'poll', liveReason: 'no-workspace' }
-  }
+  if (!workspace) return asPollBoard(await part('board', root), 'no-workspace')
   const follower = await ensureFollower(workspace)
-  if (!follower) {
-    const polled = await part('board', root)
-    return { ...polled, live: 'poll', liveReason: 'starting' }
-  }
+  if (!follower) return asPollBoard(await part('board', root), 'starting')
   if (follower.mode === 'events' && follower.state) {
     const out = {
       ...follower.board(),
@@ -506,18 +507,20 @@ async function boardResponse(rootIn) {
       live: 'events',
       liveReason: null,
       seq: follower.seq,
+      // Reconcile rescans without moving seq. rev is the change counter.
+      rev: follower.version,
     }
     rememberBoard(root, out)
     return out
   }
   // While the follower is scanning, part('board') would scan the same
   // workspace again. A disk picture is enough until events are up.
+  // The cached events board still has seq/rev; a poll answer must not.
   if (follower.mode === 'starting') {
     const disk = await readDisk(root)
-    if (disk) return { ...disk, stale: true, live: 'poll', liveReason: 'starting' }
+    if (disk) return asPollBoard({ ...disk, stale: true }, 'starting')
   }
-  const polled = await part('board', root)
-  return { ...polled, live: 'poll', liveReason: follower.reason || 'starting' }
+  return asPollBoard(await part('board', root), follower.reason || 'starting')
 }
 
 async function stopFollowers() {
@@ -629,6 +632,7 @@ async function shutdown(why) {
   closing = true
   if (sweepTimer) clearInterval(sweepTimer)
   await stopFollowers()
+  await diskThrottle.flush()
   await rm(RUN_FILE, { force: true }).catch(() => {})
   console.log(`beads-hud · остановлен (${why})`)
   process.exit(0)
@@ -637,6 +641,15 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => shutdow
 // 'exit' is synchronous. An uncaught throw skips shutdown(), and the follow
 // children would outlive the server.
 process.on('exit', () => {
+  // shutdown() already flushed. This covers an exit that skipped it, so the
+  // deferred board is not dropped on the floor.
+  for (const [root, board] of diskThrottle.pending()) {
+    try {
+      writeFileSync(diskPath(root), JSON.stringify(board))
+    } catch {
+      /* a missed cache only means a colder start */
+    }
+  }
   for (const slot of followers.values()) {
     try {
       slot.follower.killChild()

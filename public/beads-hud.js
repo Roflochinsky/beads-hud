@@ -49,8 +49,13 @@ let doc = null
 let sheet = null
 let task = null
 // Last events board we actually painted, per folder. A 2s tick with the same
-// seq has nothing new; repainting the drawer resets its scroll.
+// rev has nothing new; repainting the drawer resets its scroll. Reconcile
+// keeps seq and still changes the board, so seq alone is not the cursor.
 let liveSeen = null
+function sameEventsRev(seen, b) {
+  if (b.rev != null || seen.rev != null) return seen.rev === b.rev
+  return seen.seq === b.seq && seen.scannedAt === b.scannedAt
+}
 let editing = null
 
 /* ── Theme ─────────────────────────────────────────────────────── */
@@ -1045,9 +1050,9 @@ async function load(opts) {
   if (wantBoard) {
     jobs.push(get('board').then((b) => {
       if (!b) return
-      // Same events cursor we already painted for this folder: the board did
-      // not change. Rebuilding the drawer here throws scrollTop back to 0.
-      if (b.live === 'events' && liveSeen && liveSeen.root === want && liveSeen.seq === b.seq) {
+      // Same events picture we already painted for this folder. Rebuilding
+      // the drawer here throws scrollTop back to 0.
+      if (b.live === 'events' && liveSeen && liveSeen.root === want && sameEventsRev(liveSeen, b)) {
         waiting = false
         setFresh(b.stale ? 'loading' : 'done', b.scannedAt)
         return
@@ -1068,7 +1073,7 @@ async function load(opts) {
         if (!next) closeTask()
         else if (!liveUpdate || JSON.stringify(next) !== prevJson) openTask(task, liveUpdate ? { keepScroll: true } : undefined)
       }
-      if (b.live === 'events') liveSeen = { root: want, seq: b.seq }
+      if (b.live === 'events') liveSeen = { root: want, seq: b.seq, rev: b.rev, scannedAt: b.scannedAt }
       else liveSeen = null
       // A cached answer served mid-rescan keeps saying «обновляю…» until a fresh
       // one lands; short retries catch it without waiting for the slow poll.
