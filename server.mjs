@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { createServer } from 'node:http'
-import { execFile } from 'node:child_process'
+import { execFile, spawn as spawnChild } from 'node:child_process'
 import { promisify } from 'node:util'
-import { readFile, readdir, stat, mkdir, writeFile, rm } from 'node:fs/promises'
+import { readFile, readdir, stat, mkdir, writeFile, rm, rename } from 'node:fs/promises'
 import { join, relative, resolve, sep, extname, basename, dirname } from 'node:path'
 import { homedir } from 'node:os'
 import { marked } from 'marked'
+import { cloneIdentity, deriveBoard, eventsCheckpointPath, Follower, stateFromScan } from './lib/live.mjs'
 
 const run = promisify(execFile)
 const HOME = homedir()
@@ -24,6 +25,18 @@ const RUN_FILE = join(RUN_DIR, 'server.json')
 const CACHE_MS = 15000
 const cache = new Map()
 const inflight = new Map()
+
+// One follower per beads workspace. The cap and the idle timeout are what
+// keep a stroll through the picker from leaving a bd process per folder.
+const EVENTS_IDLE_MS = 10 * 60 * 1000
+const EVENTS_MAX = 4
+const DISK_WRITE_MS = 5000
+const followers = new Map()
+// stop() promises for followers already removed from the map (LRU eviction,
+// idle sweep). Shutdown has to await these too, or the child and the
+// checkpoint flush can still be in flight when the process exits.
+const stopping = new Set()
+const diskWrote = new Map()
 
 const SKIP = new Set(['node_modules', '.git', '.beads', 'dist', 'build', '.next', '.astro', 'vendor', 'coverage'])
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' }
@@ -47,6 +60,28 @@ async function bdJson(root, args, fallback) {
   } catch {
     return fallback
   }
+}
+
+// Exit 1 is how `bd events tail` reports a truncated journal, and the payload
+// is on stdout. The poll path still wants a thrown error; the follower does not.
+async function bdRun(root, args) {
+  try {
+    const { stdout, stderr } = await run('bd', ['-C', root, ...args], { maxBuffer: 64 * 1024 * 1024 })
+    return { stdout: stdout || '', stderr: stderr || '', code: 0 }
+  } catch (e) {
+    if (e.code === 'ENOENT') throw e
+    return {
+      stdout: e.stdout ? e.stdout.toString() : '',
+      stderr: e.stderr ? e.stderr.toString() : '',
+      code: typeof e.code === 'number' ? e.code : 1,
+    }
+  }
+}
+
+async function bdJsonStrict(root, args) {
+  const res = await bdRun(root, [...args, '--json'])
+  if (res.code) throw new Error((res.stderr || '').trim().split('\n')[0] || 'bd отказал')
+  return JSON.parse(res.stdout)
 }
 
 /** Folders worth offering in the picker: a repo, a beads workspace, or some prose. */
@@ -246,74 +281,28 @@ async function sheet(full, root) {
   }
 }
 
-const VERIFY = /verif|верифик|провер|acceptance|qa\b/i
-
-/** beads has no "verification" type, so it is derived: label-ish title on a task. */
-function kindOf(i) {
-  if (i.issue_type === 'epic') return 'epic'
-  if (i.issue_type === 'bug') return 'bug'
-  if (i.issue_type === 'feature') return 'feature'
-  if (VERIFY.test(i.title || '')) return 'verify'
-  return 'task'
-}
-
-async function board(root) {
+async function loadScan(root) {
   const [open, closed, graph] = await Promise.all([
     bdJson(root, ['list'], []),
     bdJson(root, ['list', '--status=closed'], []),
     bdJson(root, ['graph', '--all'], []),
   ])
+  return { open, closed, graph }
+}
 
-  const issues = new Map()
-  for (const i of [...(open || []), ...(closed || [])]) issues.set(i.id, { ...i })
+async function board(root) {
+  return deriveBoard(stateFromScan(await loadScan(root)))
+}
 
-  const parent = new Map()
-  const blockedBy = new Map()
-  const blocks = new Map()
-  for (const comp of graph || []) {
-    for (const i of comp.Issues || []) if (!issues.has(i.id)) issues.set(i.id, { ...i })
-    for (const d of comp.Dependencies || []) {
-      if (d.type === 'parent-child') {
-        parent.set(d.issue_id, d.depends_on_id)
-      } else if (d.type === 'blocks') {
-        if (!blockedBy.has(d.issue_id)) blockedBy.set(d.issue_id, [])
-        blockedBy.get(d.issue_id).push(d.depends_on_id)
-        if (!blocks.has(d.depends_on_id)) blocks.set(d.depends_on_id, [])
-        blocks.get(d.depends_on_id).push(d.issue_id)
-      }
-    }
-  }
-
-  const done = (id) => issues.get(id)?.status === 'closed'
-  for (const i of issues.values()) {
-    i.parent = parent.get(i.id) || null
-    i.blockedBy = (blockedBy.get(i.id) || []).filter((b) => !done(b))
-    i.blocks = (blocks.get(i.id) || []).filter((b) => !done(b))
-    i.kind = kindOf(i)
-    i.column =
-      i.status === 'closed' ? 'closed'
-      : i.status === 'in_progress' ? 'doing'
-      : i.blockedBy.length ? 'blocked'
-      : 'todo'
-  }
-
-  const all = [...issues.values()]
-  const byPriority = (a, b) => a.priority - b.priority || a.id.localeCompare(b.id)
-  const childrenOf = (id) => all.filter((i) => i.parent === id)
-
-  // A "group" is anything that owns children, plus every epic even when empty.
-  const groups = all
-    .filter((i) => i.issue_type === 'epic' || childrenOf(i.id).length)
-    .sort(byPriority)
-    .map((i) => {
-      const kids = childrenOf(i.id)
-      return { ...i, childCount: kids.length, doneCount: kids.filter((k) => k.status === 'closed').length }
-    })
-
-  const grouped = new Set(groups.map((g) => g.id))
-  const loose = all.filter((i) => !grouped.has(i.id) && !i.parent).sort(byPriority)
-
-  return { issues: all, groups, loose }
+// A failed scan must not become an empty live board. The poll path stays
+// lenient and can still answer from the disk cache.
+async function scanWorkspace(root) {
+  const [open, closed, graph] = await Promise.all([
+    bdJsonStrict(root, ['list']),
+    bdJsonStrict(root, ['list', '--status=closed']),
+    bdJsonStrict(root, ['graph', '--all']),
+  ])
+  return stateFromScan({ open, closed, graph })
 }
 
 /** Which .beads bd will actually answer from — it climbs until it finds one. */
@@ -396,6 +385,122 @@ const dropCache = (root) => {
   for (const k of cache.keys()) if (k.endsWith('\0' + root)) cache.delete(k)
 }
 
+// The events cursor is per clone. A half-written file would look like a
+// cursor of zero and replay stale snapshots over the next scan.
+async function loadEventsCheckpoint(workspace) {
+  try {
+    return JSON.parse(await readFile(eventsCheckpointPath(RUN_DIR, workspace), 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+async function saveEventsCheckpoint(workspace, payload) {
+  await mkdir(RUN_DIR, { recursive: true })
+  const file = eventsCheckpointPath(RUN_DIR, workspace)
+  const tmp = file + '.tmp'
+  await writeFile(tmp, JSON.stringify(payload))
+  await rename(tmp, file)
+}
+
+function createFollower(workspace) {
+  // stdin is ignored: `bd events tail --follow` must not sit waiting on a pipe
+  // we never write. bd serve is not a substitute — preview, and it needs Dolt.
+  return new Follower({
+    workspace,
+    exec: (args) => bdRun(workspace, args),
+    spawn: (args) => spawnChild('bd', ['-C', workspace, ...args], { stdio: ['ignore', 'pipe', 'pipe'] }),
+    scan: () => scanWorkspace(workspace),
+    loadCheckpoint: () => loadEventsCheckpoint(workspace),
+    saveCheckpoint: (payload) => saveEventsCheckpoint(workspace, payload),
+    readIdentity: () => cloneIdentity(workspace),
+    log: (line) => console.log(line),
+  })
+}
+
+function forgetFollower(key) {
+  const slot = followers.get(key)
+  if (!slot) return
+  followers.delete(key)
+  const done = Promise.resolve(slot.follower.stop()).catch(() => {})
+  stopping.add(done)
+  done.finally(() => stopping.delete(done))
+}
+
+function evictOldestFollower() {
+  let oldestKey = null
+  let oldestAt = Infinity
+  for (const [key, slot] of followers) {
+    if (slot.lastAsk < oldestAt) {
+      oldestAt = slot.lastAsk
+      oldestKey = key
+    }
+  }
+  if (oldestKey) forgetFollower(oldestKey)
+}
+
+function sweepIdleFollowers(now = Date.now()) {
+  for (const [key, slot] of followers) {
+    if (now - slot.lastAsk >= EVENTS_IDLE_MS) forgetFollower(key)
+  }
+}
+
+async function ensureFollower(root) {
+  const workspace = (await beadsRoot(root)) || root
+  const now = Date.now()
+  let slot = followers.get(workspace)
+  if (!slot) {
+    while (followers.size >= EVENTS_MAX) evictOldestFollower()
+    slot = { follower: createFollower(workspace), lastAsk: now }
+    followers.set(workspace, slot)
+    slot.follower.start().catch((e) => console.error(`beads-hud · follower · ${e.message}`))
+  } else {
+    slot.lastAsk = now
+  }
+  sweepIdleFollowers(now)
+  return slot.follower
+}
+
+function rememberBoard(root, out) {
+  const now = Date.now()
+  const prev = diskWrote.get(root) || 0
+  if (now - prev < DISK_WRITE_MS) return
+  diskWrote.set(root, now)
+  writeFile(diskPath(root), JSON.stringify(out)).catch(() => {})
+}
+
+async function boardResponse(rootIn) {
+  const root = safeRoot(rootIn)
+  if (!root) return { error: 'Папка вне домашнего каталога' }
+  if (process.env.BEADS_HUD_EVENTS === '0') {
+    const polled = await part('board', root)
+    return { ...polled, live: 'poll', liveReason: 'disabled' }
+  }
+  const follower = await ensureFollower(root)
+  if (follower.mode === 'events' && follower.state) {
+    const out = {
+      ...follower.board(),
+      scannedAt: follower.scannedAt,
+      scanMs: follower.scanMs,
+      live: 'events',
+      liveReason: null,
+      seq: follower.seq,
+    }
+    rememberBoard(root, out)
+    return out
+  }
+  const polled = await part('board', root)
+  return { ...polled, live: 'poll', liveReason: follower.reason || 'starting' }
+}
+
+async function stopFollowers() {
+  const slots = [...followers.values()]
+  followers.clear()
+  const pending = slots.map((slot) => Promise.resolve(slot.follower.stop()).catch(() => {}))
+  pending.push(...stopping)
+  await Promise.all(pending)
+}
+
 const send = (res, code, type, body) => {
   res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' })
   res.end(body)
@@ -416,7 +521,7 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname === '/api/docs') return json(res, 200, await part('docs', q.get('root')))
 
-    if (url.pathname === '/api/board') return json(res, 200, await part('board', q.get('root')))
+    if (url.pathname === '/api/board') return json(res, 200, await boardResponse(q.get('root')))
 
     if (url.pathname === '/api/doc' && req.method === 'POST') {
       const b = await body(req)
@@ -491,9 +596,12 @@ const server = createServer(async (req, res) => {
 })
 
 let closing = false
+let sweepTimer = null
 async function shutdown(why) {
   if (closing) return
   closing = true
+  if (sweepTimer) clearInterval(sweepTimer)
+  await stopFollowers()
   await rm(RUN_FILE, { force: true }).catch(() => {})
   console.log(`beads-hud · остановлен (${why})`)
   process.exit(0)
@@ -510,5 +618,7 @@ server.listen(PORT, '127.0.0.1', async () => {
   const url = `http://127.0.0.1:${PORT}`
   await mkdir(RUN_DIR, { recursive: true })
   await writeFile(RUN_FILE, JSON.stringify({ root: START, project: basename(START), port: PORT, url, pid: process.pid, started: new Date().toISOString() }))
+  sweepTimer = setInterval(() => sweepIdleFollowers(), 60 * 1000)
+  if (typeof sweepTimer.unref === 'function') sweepTimer.unref()
   console.log(`beads-hud · ${basename(START)} · ${url}`)
 })

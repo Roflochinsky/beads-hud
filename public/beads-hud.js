@@ -996,16 +996,23 @@ $('refresh').onclick = () => {
 }
 
 let loading = false
-async function load() {
+async function load(opts) {
+  const wantDocs = !opts || opts.docs !== false
+  const wantBoard = !opts || opts.board !== false
+  // A 2s events tick is a memory read. Flashing «обновляю…» and re-walking
+  // every .md on that tick would make the live board busier than the old poll.
+  const quiet = wantBoard && !wantDocs
   const want = root
   loading = true
-  setFresh('loading')
-  // The documents land in a moment; bd can take a minute on a big workspace. The
-  // board says so rather than showing the previous folder's tasks as if they were
-  // this one's.
-  waiting = true
-  renderKinds()
-  renderTasks()
+  if (!quiet) {
+    setFresh('loading')
+    // The documents land in a moment; bd can take a minute on a big workspace. The
+    // board says so rather than showing the previous folder's tasks as if they were
+    // this one's.
+    waiting = true
+    renderKinds()
+    renderTasks()
+  }
 
   const get = (part) =>
     fetch(`/api/${part}?root=${encodeURIComponent(want)}`)
@@ -1014,43 +1021,47 @@ async function load() {
       // belongs to a folder nobody is looking at any more.
       .then((d) => (want === root ? d : null))
 
-  const docsJob = get('docs').then((d) => {
-    if (!d) return
-    // Служебные поля кэша принадлежат board-ответу: docs-овские scanMs/scannedAt
-    // затёрли бы цену настоящего скана и сломали бы адаптивный опрос.
-    const { scanMs, scannedAt, stale, ...docsData } = d
-    data = { ...data, ...docsData }
-    // Tasks come from the nearest .beads upwards, which may not be this folder.
-    $('crumb').textContent = data.workspace ? `задачи из ${data.workspace}` : ''
-    linkDocs()
-    if (view === 'docs') renderDocs()
-  })
+  const jobs = []
+  if (wantDocs) {
+    jobs.push(get('docs').then((d) => {
+      if (!d) return
+      // Служебные поля кэша принадлежат board-ответу: docs-овские scanMs/scannedAt
+      // затёрли бы цену настоящего скана и сломали бы адаптивный опрос.
+      const { scanMs, scannedAt, stale, ...docsData } = d
+      data = { ...data, ...docsData }
+      // Tasks come from the nearest .beads upwards, which may not be this folder.
+      $('crumb').textContent = data.workspace ? `задачи из ${data.workspace}` : ''
+      linkDocs()
+      if (view === 'docs') renderDocs()
+    }))
+  }
 
-  const boardJob = get('board').then((b) => {
-    if (!b) return
-    data = { ...data, ...b }
-    waiting = false
-    if (sel !== 'all' && sel !== 'loose' && !sel.startsWith('kind:') && !data.groups.some((g) => g.id === sel))
-      sel = 'all'
-    linkDocs()
-    renderKinds()
-    renderTasks()
-    if (view === 'docs') renderDocs()
-    if (task) data.issues.some((i) => i.id === task) ? openTask(task) : closeTask()
-    // A cached answer served mid-rescan keeps saying «обновляю…» until a fresh
-    // one lands; short retries catch it without waiting for the slow poll.
-    setFresh(b.stale ? 'loading' : 'done', b.scannedAt)
-    if (b.stale)
-      setTimeout(() => {
-        if (!loading && editing == null && !document.hidden && want === root) load().catch(() => {})
-      }, 3000)
-  })
-
+  if (wantBoard) {
+    jobs.push(get('board').then((b) => {
+      if (!b) return
+      data = { ...data, ...b }
+      waiting = false
+      if (sel !== 'all' && sel !== 'loose' && !sel.startsWith('kind:') && !data.groups.some((g) => g.id === sel))
+        sel = 'all'
+      linkDocs()
+      renderKinds()
+      renderTasks()
+      if (view === 'docs') renderDocs()
+      if (task) data.issues.some((i) => i.id === task) ? openTask(task) : closeTask()
+      // A cached answer served mid-rescan keeps saying «обновляю…» until a fresh
+      // one lands; short retries catch it without waiting for the slow poll.
+      setFresh(b.stale ? 'loading' : 'done', b.scannedAt)
+      if (b.stale)
+        setTimeout(() => {
+          if (!loading && editing == null && !document.hidden && want === root) load().catch(() => {})
+        }, 3000)
+    }))
+  }
   try {
-    await Promise.all([docsJob, boardJob])
+    await Promise.all(jobs)
   } finally {
     loading = false
-    if (want === root) waiting = false
+    if (want === root && !quiet) waiting = false
   }
 }
 
@@ -1127,12 +1138,28 @@ await load()
 // never gets its ground pulled out from under it. A scan slower than three
 // seconds drops the routine poll to once a minute — the refresh button and the
 // return to the tab stay instant, so freshness rides on those instead.
+// Once the server is mirroring `bd events`, /api/board is a memory read and
+// the board can ask every two seconds. Documents stay on the slow cadence:
+// walking the tree that often would cost more than the board update saves.
 let polledAt = Date.now()
+let docsPolledAt = Date.now()
 setInterval(() => {
-  const every = (data.scanMs || 0) > 3000 ? 60000 : 10000
-  if (Date.now() - polledAt < every) return
-  if (!loading && editing == null && !document.hidden) {
-    polledAt = Date.now()
+  if (loading || editing != null || document.hidden) return
+  const now = Date.now()
+  const slow = (data.scanMs || 0) > 3000
+  const events = data.live === 'events'
+  if (!events) {
+    const every = slow ? 60000 : 10000
+    if (now - polledAt < every) return
+    polledAt = now
+    docsPolledAt = now
     load().catch(() => {})
+    return
   }
-}, 5000)
+  const wantBoard = now - polledAt >= 2000
+  const wantDocs = now - docsPolledAt >= (slow ? 60000 : 10000)
+  if (!wantBoard && !wantDocs) return
+  if (wantBoard) polledAt = now
+  if (wantDocs) docsPolledAt = now
+  load({ board: wantBoard, docs: wantDocs }).catch(() => {})
+}, 1000)

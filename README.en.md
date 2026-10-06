@@ -177,8 +177,9 @@ Light by default, dark from the button at the bottom of the rail. Both are built
 | `beads-hud install` | Writes the status line and the hook into Claude Code settings; `uninstall` removes only what we added |
 | `~/.cache/beads-hud/server.json` | Server state: address and pid |
 | `~/.cache/beads-hud/bd-*.json` | Cached beads numbers for the line |
+| `~/.cache/beads-hud/events-*.json` | Journal cursor: last `seq` and the clone fingerprint |
 
-The single source of truth is the beads database. beads-hud keeps no state of its own. It writes only through `bd`: create, close, claim, reopen. It writes `.md` files directly, strictly inside the selected project.
+The single source of truth is the beads database. beads-hud writes only through `bd`: create, close, claim, reopen. It writes `.md` files directly, strictly inside the selected project. The board kept in memory is a mirror of that database, not a second store.
 
 <details>
 <summary><strong>What it reads</strong></summary>
@@ -187,6 +188,7 @@ The single source of truth is the beads database. beads-hud keeps no state of it
 |---|---|
 | `bd list --json` | Issues, statuses, priorities, types |
 | `bd graph --all --json` | Relations: `parent-child` and `blocks` |
+| `bd events tail --since … --follow --json` | The change journal, when it is on (bd ≥ 1.3) |
 | `bd stats --json` | The numbers for the status line |
 | The project's `.md` files | Documents; skips `node_modules`, `.git`, `dist` and hidden directories |
 
@@ -220,12 +222,29 @@ beads-hud            # or: node /path/to/beads-hud/server.mjs
 |---|---|
 | `BEADS_HUD_PORT` | Port instead of 7777 |
 | `BEADS_HUD_NO_OPEN=1` | Do not open the browser on autostart |
+| `BEADS_HUD_EVENTS=0` | Always poll `bd`, never follow the journal |
 
 The browser opens by itself when the hook actually started the server; if the server was already running, no tab opens. By hand — `beads-hud-open`.
 
 Do not click the link in the status line: Claude Code's own interface draws it, while VS Code looks for links in ordinary terminal output.
 
 </details>
+
+## Live updates via bd events (bd ≥ 1.3)
+
+The board does not have to re-read the whole graph. With beads 1.3 or newer and the change journal turned on, the server takes one snapshot and then applies only the deltas from `bd events tail --follow`. In that mode the browser asks `/api/board` every two seconds: it is a memory read, not another `bd list`.
+
+The journal is off by default. In the project directory:
+
+```bash
+bd config set events-journal true
+```
+
+`BD_EVENTS_JOURNAL=1` does the same for one `bd` process. While the journal is off, `bd` is older than 1.3, the `bd events` process dies, or `BEADS_HUD_EVENTS=0` is set, the old poll stays: every 10 seconds, or once a minute when a scan takes longer than three seconds. The reason is on the response (`live: "poll"`, `liveReason`) and as one line in the server log. The journal can be turned off at runtime; the server re-checks the setting and falls back to polling instead of waiting on a stream that will stay quiet.
+
+The journal cursor lives in `~/.cache/beads-hud/events-<base64url of the directory>.json`: the last `seq`, the path, and a fingerprint of `.beads/metadata.json`. Each clone has its own counter, so a cursor from another clone is discarded. Every ten minutes the board still reconciles with a full scan — `bd dolt pull` and writes made through `bd sql` are not in the journal.
+
+`bd serve` is deliberately not used yet: that HTTP API is still a preview and needs its own Dolt server.
 
 ## Requirements
 
