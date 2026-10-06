@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 import { createServer } from 'node:http'
-import { execFile } from 'node:child_process'
+import { execFile, spawn as spawnChild } from 'node:child_process'
 import { promisify } from 'node:util'
-import { readFile, readdir, stat, mkdir, writeFile, rm } from 'node:fs/promises'
+import { watch, writeFileSync } from 'node:fs'
+import { readFile, readdir, stat, mkdir, writeFile, rm, rename } from 'node:fs/promises'
 import { join, relative, resolve, sep, extname, basename, dirname } from 'node:path'
 import { homedir } from 'node:os'
 import { marked } from 'marked'
+import { asPollBoard, cloneIdentity, deriveBoard, eventsCheckpointPath, Follower, makeDiskThrottle, stateFromScan } from './lib/live.mjs'
 
 const run = promisify(execFile)
 const HOME = homedir()
@@ -24,6 +26,20 @@ const RUN_FILE = join(RUN_DIR, 'server.json')
 const CACHE_MS = 15000
 const cache = new Map()
 const inflight = new Map()
+
+// One follower per beads workspace. The cap and the idle timeout are what
+// keep a stroll through the picker from leaving a bd process per folder.
+const EVENTS_IDLE_MS = 10 * 60 * 1000
+const EVENTS_MAX = 4
+const DISK_WRITE_MS = 5000
+// Editors and `bd config set` replace config.yaml in a burst of events.
+// One recheck after the burst is enough; the 15s timer is the fallback.
+const CONFIG_WATCH_MS = 300
+const followers = new Map()
+// stop() promises for followers already removed from the map (LRU eviction,
+// idle sweep). Shutdown has to await these too, or the child and the
+// checkpoint flush can still be in flight when the process exits.
+const stopping = new Set()
 
 const SKIP = new Set(['node_modules', '.git', '.beads', 'dist', 'build', '.next', '.astro', 'vendor', 'coverage'])
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' }
@@ -47,6 +63,35 @@ async function bdJson(root, args, fallback) {
   } catch {
     return fallback
   }
+}
+
+// A hung `bd version` / scan must not leave the follower in 'starting', or in
+// reconcile with the live tail already dead. Exit 1 is still how a truncated
+// journal is reported (payload on stdout); a killed child is a real failure.
+const BD_RUN_MS = 120 * 1000
+async function bdRun(root, args) {
+  try {
+    const { stdout, stderr } = await run('bd', ['-C', root, ...args], {
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: BD_RUN_MS,
+      killSignal: 'SIGKILL',
+    })
+    return { stdout: stdout || '', stderr: stderr || '', code: 0 }
+  } catch (e) {
+    if (e.code === 'ENOENT') throw e
+    if (e.killed) throw e
+    return {
+      stdout: e.stdout ? e.stdout.toString() : '',
+      stderr: e.stderr ? e.stderr.toString() : '',
+      code: typeof e.code === 'number' ? e.code : 1,
+    }
+  }
+}
+
+async function bdJsonStrict(root, args) {
+  const res = await bdRun(root, [...args, '--json'])
+  if (res.code) throw new Error((res.stderr || '').trim().split('\n')[0] || 'bd отказал')
+  return JSON.parse(res.stdout)
 }
 
 /** Folders worth offering in the picker: a repo, a beads workspace, or some prose. */
@@ -246,74 +291,28 @@ async function sheet(full, root) {
   }
 }
 
-const VERIFY = /verif|верифик|провер|acceptance|qa\b/i
-
-/** beads has no "verification" type, so it is derived: label-ish title on a task. */
-function kindOf(i) {
-  if (i.issue_type === 'epic') return 'epic'
-  if (i.issue_type === 'bug') return 'bug'
-  if (i.issue_type === 'feature') return 'feature'
-  if (VERIFY.test(i.title || '')) return 'verify'
-  return 'task'
-}
-
-async function board(root) {
+async function loadScan(root) {
   const [open, closed, graph] = await Promise.all([
     bdJson(root, ['list'], []),
     bdJson(root, ['list', '--status=closed'], []),
     bdJson(root, ['graph', '--all'], []),
   ])
+  return { open, closed, graph }
+}
 
-  const issues = new Map()
-  for (const i of [...(open || []), ...(closed || [])]) issues.set(i.id, { ...i })
+async function board(root) {
+  return deriveBoard(stateFromScan(await loadScan(root)))
+}
 
-  const parent = new Map()
-  const blockedBy = new Map()
-  const blocks = new Map()
-  for (const comp of graph || []) {
-    for (const i of comp.Issues || []) if (!issues.has(i.id)) issues.set(i.id, { ...i })
-    for (const d of comp.Dependencies || []) {
-      if (d.type === 'parent-child') {
-        parent.set(d.issue_id, d.depends_on_id)
-      } else if (d.type === 'blocks') {
-        if (!blockedBy.has(d.issue_id)) blockedBy.set(d.issue_id, [])
-        blockedBy.get(d.issue_id).push(d.depends_on_id)
-        if (!blocks.has(d.depends_on_id)) blocks.set(d.depends_on_id, [])
-        blocks.get(d.depends_on_id).push(d.issue_id)
-      }
-    }
-  }
-
-  const done = (id) => issues.get(id)?.status === 'closed'
-  for (const i of issues.values()) {
-    i.parent = parent.get(i.id) || null
-    i.blockedBy = (blockedBy.get(i.id) || []).filter((b) => !done(b))
-    i.blocks = (blocks.get(i.id) || []).filter((b) => !done(b))
-    i.kind = kindOf(i)
-    i.column =
-      i.status === 'closed' ? 'closed'
-      : i.status === 'in_progress' ? 'doing'
-      : i.blockedBy.length ? 'blocked'
-      : 'todo'
-  }
-
-  const all = [...issues.values()]
-  const byPriority = (a, b) => a.priority - b.priority || a.id.localeCompare(b.id)
-  const childrenOf = (id) => all.filter((i) => i.parent === id)
-
-  // A "group" is anything that owns children, plus every epic even when empty.
-  const groups = all
-    .filter((i) => i.issue_type === 'epic' || childrenOf(i.id).length)
-    .sort(byPriority)
-    .map((i) => {
-      const kids = childrenOf(i.id)
-      return { ...i, childCount: kids.length, doneCount: kids.filter((k) => k.status === 'closed').length }
-    })
-
-  const grouped = new Set(groups.map((g) => g.id))
-  const loose = all.filter((i) => !grouped.has(i.id) && !i.parent).sort(byPriority)
-
-  return { issues: all, groups, loose }
+// A failed scan must not become an empty live board. The poll path stays
+// lenient and can still answer from the disk cache.
+async function scanWorkspace(root) {
+  const [open, closed, graph] = await Promise.all([
+    bdJsonStrict(root, ['list']),
+    bdJsonStrict(root, ['list', '--status=closed']),
+    bdJsonStrict(root, ['graph', '--all']),
+  ])
+  return stateFromScan({ open, closed, graph })
 }
 
 /** Which .beads bd will actually answer from — it climbs until it finds one. */
@@ -356,6 +355,18 @@ const MAKE = { docs: docsOf, board: boardOf }
 // картинка с видимым возрастом лучше пустоты.
 const diskPath = (root) => join(RUN_DIR, 'board-' + Buffer.from(root).toString('base64url') + '.json')
 const readDisk = (root) => readFile(diskPath(root), 'utf8').then(JSON.parse).catch(() => null)
+// One write per window. A board skipped inside the window is written when the
+// window ends (the helper unrefs that timer). Poll scans share the throttle
+// so a late events snapshot cannot clobber a newer scan. flush() waits on the
+// promise write() returns; a block body would drop it and process.exit would
+// cut the deferred board.
+const diskThrottle = makeDiskThrottle({
+  now: () => Date.now(),
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  clearTimer: (timer) => clearTimeout(timer),
+  waitMs: DISK_WRITE_MS,
+  write: (root, board) => writeFile(diskPath(root), JSON.stringify(board)).catch(() => {}),
+})
 
 async function part(kind, rootIn) {
   const root = safeRoot(rootIn)
@@ -372,7 +383,7 @@ async function part(kind, rootIn) {
         // показывает первое и подстраивает частоту опроса по второму.
         const out = { ...data, scannedAt: Date.now(), scanMs: Date.now() - t0 }
         cache.set(key, { at: Date.now(), data: out })
-        if (kind === 'board' && !data.error) writeFile(diskPath(root), JSON.stringify(out)).catch(() => {})
+        if (kind === 'board' && !data.error) diskThrottle.put(root, out)
         return out
       })
       .finally(() => inflight.delete(key))
@@ -396,6 +407,172 @@ const dropCache = (root) => {
   for (const k of cache.keys()) if (k.endsWith('\0' + root)) cache.delete(k)
 }
 
+// The events cursor is per clone. A half-written file would look like a
+// cursor of zero and replay stale snapshots over the next scan.
+async function loadEventsCheckpoint(workspace) {
+  try {
+    return JSON.parse(await readFile(eventsCheckpointPath(RUN_DIR, workspace), 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+async function saveEventsCheckpoint(workspace, payload) {
+  await mkdir(RUN_DIR, { recursive: true })
+  const file = eventsCheckpointPath(RUN_DIR, workspace)
+  const tmp = file + '.tmp'
+  await writeFile(tmp, JSON.stringify(payload))
+  await rename(tmp, file)
+}
+
+// `bd config set` and editors replace config.yaml. A watch on the file itself
+// goes silent across that replace; the directory event still carries the name.
+// The journal and the database live in the same directory, so anything other
+// than config.yaml must not turn into a `bd config get`.
+function watchBeadsConfig(workspace, onChange) {
+  let timer = null
+  let closed = false
+  let watcher
+  try {
+    watcher = watch(join(workspace, '.beads'), (_event, filename) => {
+      if (basename(String(filename || '')) !== 'config.yaml') return
+      if (closed) return
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        timer = null
+        if (!closed) onChange()
+      }, CONFIG_WATCH_MS)
+      if (typeof timer.unref === 'function') timer.unref()
+    })
+  } catch {
+    return { close() {} }
+  }
+  watcher.on('error', () => {})
+  return {
+    close() {
+      if (closed) return
+      closed = true
+      if (timer) clearTimeout(timer)
+      timer = null
+      try {
+        watcher.close()
+      } catch {
+        /* already closed */
+      }
+    },
+  }
+}
+
+function createFollower(workspace) {
+  // stdin is ignored: `bd events tail --follow` must not sit waiting on a pipe
+  // we never write. bd serve is not a substitute — preview, and it needs Dolt.
+  return new Follower({
+    workspace,
+    exec: (args) => bdRun(workspace, args),
+    spawn: (args) => spawnChild('bd', ['-C', workspace, ...args], { stdio: ['ignore', 'pipe', 'pipe'] }),
+    scan: () => scanWorkspace(workspace),
+    loadCheckpoint: () => loadEventsCheckpoint(workspace),
+    saveCheckpoint: (payload) => saveEventsCheckpoint(workspace, payload),
+    readIdentity: () => cloneIdentity(workspace),
+    log: (line) => console.log(line),
+    watchConfig: (onChange) => watchBeadsConfig(workspace, onChange),
+  })
+}
+
+function forgetFollower(key) {
+  const slot = followers.get(key)
+  if (!slot) return
+  followers.delete(key)
+  const done = Promise.resolve(slot.follower.stop()).catch(() => {})
+  stopping.add(done)
+  done.finally(() => stopping.delete(done))
+}
+
+function evictOldestFollower() {
+  let oldestKey = null
+  let oldestAt = Infinity
+  for (const [key, slot] of followers) {
+    if (slot.lastAsk < oldestAt) {
+      oldestAt = slot.lastAsk
+      oldestKey = key
+    }
+  }
+  if (oldestKey) forgetFollower(oldestKey)
+}
+
+function sweepIdleFollowers(now = Date.now()) {
+  for (const [key, slot] of followers) {
+    if (now - slot.lastAsk >= EVENTS_IDLE_MS) forgetFollower(key)
+  }
+}
+
+async function ensureFollower(workspace) {
+  // Shutdown already asked every child to die. A request in that window must
+  // not start another `bd events tail --follow`.
+  if (closing) return null
+  const now = Date.now()
+  let slot = followers.get(workspace)
+  if (!slot) {
+    if (closing) return null
+    while (followers.size >= EVENTS_MAX) evictOldestFollower()
+    if (closing) return null
+    slot = { follower: createFollower(workspace), lastAsk: now }
+    followers.set(workspace, slot)
+    slot.follower.start().catch((e) => console.error(`beads-hud · follower · ${e.message}`))
+  } else {
+    slot.lastAsk = now
+  }
+  sweepIdleFollowers(now)
+  return slot.follower
+}
+
+function rememberBoard(root, out) {
+  diskThrottle.put(root, out)
+}
+
+async function boardResponse(rootIn) {
+  const root = safeRoot(rootIn)
+  if (!root) return { error: 'Папка вне домашнего каталога' }
+  if (process.env.BEADS_HUD_EVENTS === '0') {
+    return asPollBoard(await part('board', root), 'disabled')
+  }
+  // No .beads at all (not the same as "~/.beads exists but bd rejects it").
+  const workspace = await beadsRoot(root)
+  if (!workspace) return asPollBoard(await part('board', root), 'no-workspace')
+  const follower = await ensureFollower(workspace)
+  if (!follower) return asPollBoard(await part('board', root), 'starting')
+  if (follower.mode === 'events' && follower.state) {
+    const out = {
+      ...follower.board(),
+      scannedAt: follower.scannedAt,
+      scanMs: follower.scanMs,
+      live: 'events',
+      liveReason: null,
+      seq: follower.seq,
+      // Reconcile rescans without moving seq. rev is the change counter.
+      rev: follower.version,
+    }
+    rememberBoard(root, out)
+    return out
+  }
+  // While the follower is scanning, part('board') would scan the same
+  // workspace again. A disk picture is enough until events are up.
+  // The cached events board still has seq/rev; a poll answer must not.
+  if (follower.mode === 'starting') {
+    const disk = await readDisk(root)
+    if (disk) return asPollBoard({ ...disk, stale: true }, 'starting')
+  }
+  return asPollBoard(await part('board', root), follower.reason || 'starting')
+}
+
+async function stopFollowers() {
+  const slots = [...followers.values()]
+  followers.clear()
+  const pending = slots.map((slot) => Promise.resolve(slot.follower.stop()).catch(() => {}))
+  pending.push(...stopping)
+  await Promise.all(pending)
+}
+
 const send = (res, code, type, body) => {
   res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' })
   res.end(body)
@@ -416,7 +593,7 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname === '/api/docs') return json(res, 200, await part('docs', q.get('root')))
 
-    if (url.pathname === '/api/board') return json(res, 200, await part('board', q.get('root')))
+    if (url.pathname === '/api/board') return json(res, 200, await boardResponse(q.get('root')))
 
     if (url.pathname === '/api/doc' && req.method === 'POST') {
       const b = await body(req)
@@ -491,14 +668,38 @@ const server = createServer(async (req, res) => {
 })
 
 let closing = false
+let sweepTimer = null
 async function shutdown(why) {
   if (closing) return
   closing = true
+  if (sweepTimer) clearInterval(sweepTimer)
+  await stopFollowers()
+  await diskThrottle.flush()
   await rm(RUN_FILE, { force: true }).catch(() => {})
   console.log(`beads-hud · остановлен (${why})`)
   process.exit(0)
 }
 for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(sig, () => shutdown(sig))
+// 'exit' is synchronous. An uncaught throw skips shutdown(), and the follow
+// children would outlive the server.
+process.on('exit', () => {
+  // shutdown() already flushed. This covers an exit that skipped it, so the
+  // deferred board is not dropped on the floor.
+  for (const [root, board] of diskThrottle.pending()) {
+    try {
+      writeFileSync(diskPath(root), JSON.stringify(board))
+    } catch {
+      /* a missed cache only means a colder start */
+    }
+  }
+  for (const slot of followers.values()) {
+    try {
+      slot.follower.killChild()
+    } catch {
+      /* already dying */
+    }
+  }
+})
 
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE') process.exit(0)
@@ -510,5 +711,7 @@ server.listen(PORT, '127.0.0.1', async () => {
   const url = `http://127.0.0.1:${PORT}`
   await mkdir(RUN_DIR, { recursive: true })
   await writeFile(RUN_FILE, JSON.stringify({ root: START, project: basename(START), port: PORT, url, pid: process.pid, started: new Date().toISOString() }))
+  sweepTimer = setInterval(() => sweepIdleFollowers(), 60 * 1000)
+  if (typeof sweepTimer.unref === 'function') sweepTimer.unref()
   console.log(`beads-hud · ${basename(START)} · ${url}`)
 })
