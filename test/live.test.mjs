@@ -114,6 +114,7 @@ function setup(opts = {}) {
     versionCode: opts.versionCode ?? 0,
     versionStdout: opts.versionStdout,
     journal: opts.journal ?? 'true',
+    journalCode: opts.journalCode ?? 0,
     identity: opts.identity ?? 'clone-a',
     checkpoint: opts.checkpoint ?? null,
     drain: opts.drain || (() => ({ stdout: '', stderr: '', code: 0 })),
@@ -137,6 +138,9 @@ function setup(opts = {}) {
           return { stdout, stderr: '', code: bag.versionCode || 0 }
         }
         if (args[0] === 'config') {
+          if (bag.journalCode) {
+            return { stdout: '', stderr: 'database is locked', code: bag.journalCode }
+          }
           return { stdout: JSON.stringify({ key: 'events-journal', value: bag.journal }), stderr: '', code: 0 }
         }
         return { stdout: '', stderr: 'unexpected ' + args.join(' '), code: 1 }
@@ -549,6 +553,33 @@ describe('follower', () => {
     }
   })
 
+  test('a failed bd config get during start is events-error and retries', async () => {
+    const env = setup({
+      journalCode: 1,
+      backoffStart: 1000,
+      configRecheckMs: 600_000,
+      healthyMs: 600_000,
+      reconcileMs: 600_000,
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'poll')
+      assert.equal(follower.reason, 'events-error')
+      assert.equal(env.scans.n, 0)
+      assert.equal(env.spawned.length, 0)
+      assert.match(env.logs[0], /beads-hud · poll · \/home\/box\/proj · events-error/)
+      await env.clock.advance(999)
+      assert.equal(env.execLog.filter((args) => args[0] === 'config').length, 1)
+      await env.clock.advance(1)
+      assert.equal(env.execLog.filter((args) => args[0] === 'config').length, 2)
+      assert.equal(follower.mode, 'poll')
+      assert.equal(follower.reason, 'events-error')
+    } finally {
+      await follower.stop()
+    }
+  })
+
   test('disabled journal config stays on the poll path', async () => {
     const env = setup({ journal: 'false' })
     const follower = env.follower()
@@ -927,6 +958,28 @@ describe('follower', () => {
       assert.equal(follower.reason, 'journal-disabled')
       assert.equal(env.follows()[0].child.killed, true)
       assert.match(env.logs.at(-1), /beads-hud · poll · \/home\/box\/proj · journal-disabled/)
+    } finally {
+      await follower.stop()
+    }
+  })
+
+  test('a config recheck with a failing config get keeps events mode', async () => {
+    const env = setup({ configRecheckMs: 5000, backoffStart: 30_000 })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'events')
+      const child = env.follows()[0].child
+      const before = env.execLog.filter((args) => args[0] === 'config').length
+      env.bag.journalCode = 1
+      await env.clock.advance(4999)
+      assert.equal(follower.mode, 'events')
+      await env.clock.advance(1)
+      assert.ok(env.execLog.filter((args) => args[0] === 'config').length > before)
+      assert.equal(follower.mode, 'events')
+      assert.equal(follower.reason, null)
+      assert.equal(child.killed, false)
+      assert.equal(env.follows().length, 1)
     } finally {
       await follower.stop()
     }
