@@ -240,7 +240,7 @@ The journal is off by default. In the project directory:
 bd config set events-journal true
 ```
 
-`BD_EVENTS_JOURNAL=1` does the same for one `bd` process. While the journal is off, `bd` is older than 1.3, the `bd events` process dies, or `BEADS_HUD_EVENTS=0` is set, the old poll stays: every 10 seconds, or once a minute when a scan takes longer than three seconds. The reason is on the response (`live: "poll"`, `liveReason`) and as one line in the server log. The journal can be turned off at runtime; the server re-checks the setting and falls back to polling instead of waiting on a stream that will stay quiet.
+`BD_EVENTS_JOURNAL=1` does the same for one `bd` process. While the journal is off, `bd` is older than 1.3, the `bd events` process dies, or `BEADS_HUD_EVENTS=0` is set, the old poll stays: every 10 seconds, or once a minute when a scan takes longer than three seconds. The reason is on the response (`live: "poll"`, `liveReason`) and as one line in the server log. The journal can be turned off at runtime; the server watches `.beads/config.yaml` and also re-checks the setting every 15 s, then falls back to polling instead of waiting on a stream that will stay quiet.
 
 The journal cursor lives in `~/.cache/beads-hud/events-<base64url of the directory>.json`: the last `seq`, the path, and a fingerprint of `.beads/metadata.json`. Each clone has its own counter, so a cursor from another clone is discarded. Every ten minutes the board still reconciles with a full scan — `bd dolt pull` and writes made through `bd sql` are not in the journal.
 

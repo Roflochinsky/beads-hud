@@ -195,6 +195,7 @@ function setup(opts = {}) {
       log(line) {
         logs.push(line)
       },
+      watchConfig: opts.watchConfig,
       configRecheckMs: opts.configRecheckMs ?? 60_000,
       reconcileMs: opts.reconcileMs ?? 600_000,
       backoffStart: opts.backoffStart ?? 30_000,
@@ -929,6 +930,77 @@ describe('follower', () => {
     } finally {
       await follower.stop()
     }
+  })
+
+  test('the periodic config recheck defaults to 15s', () => {
+    const follower = new Follower({ workspace: '/home/box/proj' })
+    assert.equal(follower.configRecheckMs, 15_000)
+  })
+
+  test('a config watch that flips the journal off leaves events mode', async () => {
+    let onChange = null
+    let closed = 0
+    const env = setup({
+      configRecheckMs: 600_000,
+      backoffStart: 30_000,
+      watchConfig(cb) {
+        onChange = cb
+        return {
+          close() {
+            closed++
+          },
+        }
+      },
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'events')
+      assert.equal(typeof onChange, 'function')
+      const before = env.execLog.filter((args) => args[0] === 'config').length
+      await onChange()
+      assert.equal(follower.mode, 'events')
+      assert.equal(closed, 0)
+      env.bag.journal = 'false'
+      await onChange()
+      assert.ok(env.execLog.filter((args) => args[0] === 'config').length > before)
+      assert.equal(follower.mode, 'poll')
+      assert.equal(follower.reason, 'journal-disabled')
+      assert.equal(env.follows()[0].child.killed, true)
+      assert.equal(closed, 1)
+      assert.match(env.logs.at(-1), /beads-hud · poll · \/home\/box\/proj · journal-disabled/)
+    } finally {
+      await follower.stop()
+    }
+    // enterPoll already closed it. stop must not need the watcher to still be open.
+    assert.equal(closed, 1)
+  })
+
+  test('stop and restart close the config watcher', async () => {
+    let n = 0
+    const closed = []
+    const env = setup({
+      watchConfig() {
+        const id = ++n
+        return {
+          close() {
+            closed.push(id)
+          },
+        }
+      },
+    })
+    const follower = env.follower()
+    try {
+      await follower.start()
+      assert.equal(follower.mode, 'events')
+      assert.deepEqual(closed, [])
+      await follower.start()
+      assert.equal(follower.mode, 'events')
+      assert.deepEqual(closed, [1])
+    } finally {
+      await follower.stop()
+    }
+    assert.deepEqual(closed, [1, 2])
   })
 
   test('a healthy stretch resets the backoff', async () => {

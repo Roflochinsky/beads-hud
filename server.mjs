@@ -2,7 +2,7 @@
 import { createServer } from 'node:http'
 import { execFile, spawn as spawnChild } from 'node:child_process'
 import { promisify } from 'node:util'
-import { writeFileSync } from 'node:fs'
+import { watch, writeFileSync } from 'node:fs'
 import { readFile, readdir, stat, mkdir, writeFile, rm, rename } from 'node:fs/promises'
 import { join, relative, resolve, sep, extname, basename, dirname } from 'node:path'
 import { homedir } from 'node:os'
@@ -32,6 +32,9 @@ const inflight = new Map()
 const EVENTS_IDLE_MS = 10 * 60 * 1000
 const EVENTS_MAX = 4
 const DISK_WRITE_MS = 5000
+// Editors and `bd config set` replace config.yaml in a burst of events.
+// One recheck after the burst is enough; the 15s timer is the fallback.
+const CONFIG_WATCH_MS = 300
 const followers = new Map()
 // stop() promises for followers already removed from the map (LRU eviction,
 // idle sweep). Shutdown has to await these too, or the child and the
@@ -354,15 +357,15 @@ const diskPath = (root) => join(RUN_DIR, 'board-' + Buffer.from(root).toString('
 const readDisk = (root) => readFile(diskPath(root), 'utf8').then(JSON.parse).catch(() => null)
 // One write per window. A board skipped inside the window is written when the
 // window ends (the helper unrefs that timer). Poll scans share the throttle
-// so a late events snapshot cannot clobber a newer scan.
+// so a late events snapshot cannot clobber a newer scan. flush() waits on the
+// promise write() returns; a block body would drop it and process.exit would
+// cut the deferred board.
 const diskThrottle = makeDiskThrottle({
   now: () => Date.now(),
   setTimer: (fn, ms) => setTimeout(fn, ms),
   clearTimer: (timer) => clearTimeout(timer),
   waitMs: DISK_WRITE_MS,
-  write: (root, board) => {
-    writeFile(diskPath(root), JSON.stringify(board)).catch(() => {})
-  },
+  write: (root, board) => writeFile(diskPath(root), JSON.stringify(board)).catch(() => {}),
 })
 
 async function part(kind, rootIn) {
@@ -422,6 +425,44 @@ async function saveEventsCheckpoint(workspace, payload) {
   await rename(tmp, file)
 }
 
+// `bd config set` and editors replace config.yaml. A watch on the file itself
+// goes silent across that replace; the directory event still carries the name.
+// The journal and the database live in the same directory, so anything other
+// than config.yaml must not turn into a `bd config get`.
+function watchBeadsConfig(workspace, onChange) {
+  let timer = null
+  let closed = false
+  let watcher
+  try {
+    watcher = watch(join(workspace, '.beads'), (_event, filename) => {
+      if (basename(String(filename || '')) !== 'config.yaml') return
+      if (closed) return
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => {
+        timer = null
+        if (!closed) onChange()
+      }, CONFIG_WATCH_MS)
+      if (typeof timer.unref === 'function') timer.unref()
+    })
+  } catch {
+    return { close() {} }
+  }
+  watcher.on('error', () => {})
+  return {
+    close() {
+      if (closed) return
+      closed = true
+      if (timer) clearTimeout(timer)
+      timer = null
+      try {
+        watcher.close()
+      } catch {
+        /* already closed */
+      }
+    },
+  }
+}
+
 function createFollower(workspace) {
   // stdin is ignored: `bd events tail --follow` must not sit waiting on a pipe
   // we never write. bd serve is not a substitute — preview, and it needs Dolt.
@@ -434,6 +475,7 @@ function createFollower(workspace) {
     saveCheckpoint: (payload) => saveEventsCheckpoint(workspace, payload),
     readIdentity: () => cloneIdentity(workspace),
     log: (line) => console.log(line),
+    watchConfig: (onChange) => watchBeadsConfig(workspace, onChange),
   })
 }
 
