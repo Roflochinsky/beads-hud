@@ -48,7 +48,7 @@
   ],
   "scripts": {
     "start": "node server.mjs",
-    "test": "node server.mjs selfcheck && node --test test/"
+    "test": "node server.mjs selfcheck && node --test test/*.test.mjs"
   },
   "dependencies": {
     "marked": "^18.0.9"
