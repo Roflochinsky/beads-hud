@@ -12,10 +12,9 @@ await mkdir('dist/ui/licenses', { recursive: true });
 await cp('src/ui/THIRD-PARTY.md', 'dist/ui/THIRD-PARTY.md');
 await cp('src/ui/fonts/OFL.txt', 'dist/ui/licenses/Onest-OFL.txt');
 await cp('src/ui/icons/LICENSE', 'dist/ui/licenses/Material-Symbols-LICENSE');
-await cp('integrations/tern', 'dist/tern', { recursive: true });
 await cp('integrations/paseo', 'dist/paseo', { recursive: true });
 await cp('integrations/omarchy', 'dist/omarchy', { recursive: true });
-for (const host of ['ui', 'tern', 'paseo', 'omarchy']) await cp('LICENSE', `dist/${host}/LICENSE`);
+for (const host of ['ui', 'paseo', 'omarchy']) await cp('LICENSE', `dist/${host}/LICENSE`);
 await mkdir('dist/desktop', { recursive: true });
 async function copyStatic(source, destination) {
   for (const entry of await readdir(source, { withFileTypes: true })) {
@@ -25,7 +24,6 @@ async function copyStatic(source, destination) {
 }
 await copyStatic('src/desktop', 'dist/desktop');
 await Promise.all([
-  build({ ...node, entryPoints: ['src/tern/bridge.ts'], outfile: 'dist/tern/bridge.mjs' }),
   build({ ...node, entryPoints: ['src/core/service.ts'], outfile: 'dist/paseo/server/core.js' }),
   build({ ...node, entryPoints: ['src/desktop/main.ts', 'src/desktop/waybar.ts'], outdir: 'dist/desktop' }),
   build({ ...node, entryPoints: ['src/desktop/preload.ts'], outfile: 'dist/desktop/preload.cjs', format: 'cjs' }),
@@ -35,6 +33,4 @@ const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const paseoPackage = JSON.parse(await readFile('dist/paseo/package.json', 'utf8'));
 paseoPackage.version = pkg.version;
 await writeFile('dist/paseo/package.json', `${JSON.stringify(paseoPackage, null, 2)}\n`);
-const ternManifest = await readFile('dist/tern/plugin.toml', 'utf8');
-await writeFile('dist/tern/plugin.toml', ternManifest.replace(/^version = "[^"]+"$/m, `version = "${pkg.version}"`));
 console.log(`Built Beads Board ${pkg.version} for all hosts.`);

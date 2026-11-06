@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — Tern repository extraction
+
+- Moved live Tern Luau host, TypeScript bridge, native smoke instructions and bridge tests to [beads-tern](https://github.com/Roflochinsky/beads-tern), independently versioned from 0.1.0.
+- Removed Tern from native build, plugin packaging, CI uploads and the release collector. Future native releases contain eight platform assets plus checksums; regression coverage rejects a Tern archive.
+- Preserved the published `native-v0.1.2` release, historical artifacts and recorded verification. Browser HUD and remaining host implementations are unchanged.
+- Requires the next native version (0.1.3) before publication; do not overwrite `native-v0.1.2`.
+
 ## 0.1.2 — native release collection
 
 - Corrected the release collector to accept Electron Builder's actual `linux-x86_64.AppImage` filename while retaining the strict nine-asset and checksum contract.

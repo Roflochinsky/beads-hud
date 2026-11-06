@@ -8,7 +8,7 @@ const expectedNames = new Set([
   `beads-board-${version}-linux-x86_64.AppImage`,
   `beads-board-${version}-linux-x64.tar.gz`,
   ...['x64', 'arm64'].flatMap((arch) => ['dmg', 'zip'].map((extension) => `beads-board-${version}-macos-${arch}.${extension}`)),
-  ...['tern', 'paseo', 'omarchy'].map((host) => `beads-${host}-${version}.tar.gz`),
+  ...['paseo', 'omarchy'].map((host) => `beads-${host}-${version}.tar.gz`),
 ]);
 await mkdir('release', { recursive: true });
 const sums = [];

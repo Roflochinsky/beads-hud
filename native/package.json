@@ -2,7 +2,7 @@
   "name": "@roflochinsky/beads-hud-native",
   "version": "0.1.2",
   "private": true,
-  "description": "Beads Board for Tern, Paseo, Omarchy, Linux and macOS",
+  "description": "Beads Board for Paseo, Omarchy, Linux and macOS",
   "type": "module",
   "main": "dist/desktop/main.js",
   "desktopName": "dev.roflochinsky.beads.desktop",

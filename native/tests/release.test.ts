@@ -27,7 +27,6 @@ test('release collection accepts exactly the native assets and rejects missing o
     `beads-board-${version}-macos-x64.zip`,
     `beads-board-${version}-macos-arm64.dmg`,
     `beads-board-${version}-macos-arm64.zip`,
-    `beads-tern-${version}.tar.gz`,
     `beads-paseo-${version}.tar.gz`,
     `beads-omarchy-${version}.tar.gz`,
   ];
@@ -38,7 +37,7 @@ test('release collection accepts exactly the native assets and rejects missing o
       const directory = join(root, 'downloaded', 'beads-native-test');
       await mkdir(directory, { recursive: true });
       const assets = scenario === 'missing' ? files.slice(1) : [...files];
-      if (scenario === 'foreign') assets.push(`beads-unrelated-${version}.tar.gz`);
+      if (scenario === 'foreign') assets.push(`beads-tern-${version}.tar.gz`);
       const sums = [];
       for (const file of assets) {
         const content = `Release contract fixture: ${file}\n`;

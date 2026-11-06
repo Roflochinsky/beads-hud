@@ -1,5 +1,11 @@
 # Проверки
 
+## Отделение Tern
+
+После извлечения Tern в [beads-tern](https://github.com/Roflochinsky/beads-tern) на Linux x64 прошли `npm ci`, проверки TypeScript, сборка, 27 тестов и real-Beads smoke. `npm run package:plugins` создал только архивы Paseo и Omarchy; Tern удалён из сборки и будущего release-контракта.
+
+Это проверка текущего дерева, не новый выпуск приложений. Опубликованные `native-v0.1.2` и его Tern-архив сохранены. Для следующего native-релиза требуется новая версия.
+
 ## Статус переноса
 
 После переноса версии 0.1.1 на Linux x64 прошли `npm ci`, обе проверки TypeScript, сборка, 29 тестов и `npm run smoke` с настоящей изолированной базой Beads 1.3.2.
