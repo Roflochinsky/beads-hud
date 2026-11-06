@@ -43,7 +43,7 @@ All entries below additionally receive the global flags above. Optional string f
 - `bd schema` describes `dependencies` as raw `{issue_id, depends_on_id, type}` records. Actual `show --brief-deps` instead embeds issue-detail rows with `{id, dependency_type, …}`. Actual `list` can hydrate only some edges. Native `dep list` with **one argument** also hydrates targets and drops edges whose targets have no local row. Therefore both details and snapshots use raw multi-argument `dep list`; a singleton (including the last batch of a 201-issue snapshot) repeats its ID. Native `readDepListEdges` deduplicates anchors, so edges are not duplicated. This retains local, closed-target, and external-only edges.
 - Status and issue-type strings are not narrowed to the schema enums: native custom statuses/types remain usable. Missing optional descriptions/assignees/labels become empty values, not guessed actors or statuses. `acceptance_criteria`, date fields, `estimated_minutes`, and `heartbeat_at` map to shared camelCase fields. The shared interface does not expose `lease_expires_at`.
 - Native empty Go slices may be `null`; read collections normalize them to `[]`. Other malformed read results fail explicitly. Mutations have an unspecified RPC result shape; JSON is decoded when present, otherwise successful native text or `null` is returned. Consumers refresh after success.
-- Comment rows remain native `{id, issue_id, author, text, created_at}`. Schema declares string IDs and RFC3339 timestamps. A read-only live comments query returned `[]`; populated rows still need the isolated smoke.
+- Comment rows remain native `{id, issue_id, author, text, created_at}`. Schema declares string IDs and RFC3339 timestamps. The isolated real-bd smoke creates and reads a populated comment.
 - Labels are supplied as a correctly quoted CLI CSV list. This RPC rejects labels containing commas/newlines and caps the array at 100. Native validators remain authoritative for types, statuses, dependency kinds, and claim/close constraints.
 - Installed 1.3.2's changelog notes that old workspaces crossing migration 0059 can retain incorrect `is_blocked` flags until an operator runs `bd recompute-blocked`. The core never repairs user data or substitutes its own readiness calculation.
 
@@ -56,13 +56,15 @@ The inspected release source is `gastownhall/beads` **v1.3.2**, commit `9b65b9e1
 - [List directory filters](https://github.com/gastownhall/beads/blob/v1.3.2/cmd/bd/list_input.go#L320-L324), [ready directory filters](https://github.com/gastownhall/beads/blob/v1.3.2/cmd/bd/ready_input.go#L204-L210), [BD-prefixed dotted-key environment mapping](https://github.com/gastownhall/beads/blob/v1.3.2/internal/config/config.go#L207-L213), and [directory-label map lookup](https://github.com/gastownhall/beads/blob/v1.3.2/internal/config/config.go#L887-L918). Pinned Viper 1.21.0 [prefers environment to config](https://github.com/spf13/viper/blob/v1.21.0/viper.go#L1230-L1254); its Cast 1.10.0 dependency [decodes the JSON map string](https://github.com/spf13/cast/blob/v1.10.0/map.go#L14-L61), so `{}` is a valid empty-map override, not an invented CLI flag.
 
 
-## Verification handoff
+## Verification
 
-No build, lint, formatter, tests, or mutation smoke was run during this correction. `tests/core.test.ts` covers the agreed public request seam with an external fake `bd` process: project/input restrictions, 201-row snapshots ending with a singleton external-only edge batch, detail raw-edge precedence, directory-default suppression without losing labels, native ready/blocked membership, closed and hidden statuses, field normalization, empty/malformed/oversized/error output, ambient selector handling with preserved credentials/actor, registered-ID precheck refusal, and same-workspace process serialization. These tests do not establish atomic isolation from external writers.
+The native suite's 29 tests and real-bd smoke passed after migration. Current host evidence and limits are recorded in [verification](../../docs/verification.md).
 
-`tests/server.test.ts` exercises authenticated HTTP with maximum 64 KiB comments (plain, multibyte, newline, and six-byte JSON escaping), decoded text overflow, and the actual 40 MiB body boundary plus one byte. `scripts/smoke.mjs` prepares only a disposable native project with directory defaults and an existing external edge; it checks singleton snapshots/details and local dependencies before and after closing their target. Gate owner must execute these checks after integration.
+`tests/core.test.ts` covers the public request seam with an external fake `bd` process: project/input restrictions, 201-row snapshots ending with a singleton external-only edge batch, detail raw-edge precedence, directory-default suppression without losing labels, native ready/blocked membership, closed and hidden statuses, field normalization, empty/malformed/oversized/error output, ambient selector handling with preserved credentials/actor, registered-ID precheck refusal, and same-workspace process serialization. These tests do not establish atomic isolation from external writers.
 
-Parent/gate-owner commands after integration:
+`tests/server.test.ts` exercises authenticated HTTP with maximum 64 KiB comments (plain, multibyte, newline, and six-byte JSON escaping), decoded text overflow, and the actual 40 MiB body boundary plus one byte. `scripts/smoke.mjs` prepares only a disposable native project with directory defaults and an existing external edge; it checks singleton snapshots/details and local dependencies before and after closing their target.
+
+Commands from `native/`:
 
 ```sh
 npm run typecheck
@@ -71,7 +73,7 @@ npm run build
 npm run smoke
 ```
 
-To run just the compiled core regression file after the parent test bundling step:
+To run just the compiled core regression file after `npm test` bundles the tests:
 
 ```sh
 node --test .test-dist/tests/core.test.js
