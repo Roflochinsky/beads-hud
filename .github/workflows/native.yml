@@ -1,0 +1,128 @@
+name: Native build and release
+on:
+  push:
+    branches: [main]
+    tags: ['native-v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: beads-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+jobs:
+  browser-hud:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm test
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux
+            package-args: --linux --x64
+          - os: macos-15
+            platform: macos
+            package-args: --mac --x64 --arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Install verified Beads 1.3.2
+        run: node scripts/install-ci-bd.mjs
+      - run: npm test
+      - name: Exercise real isolated Beads database
+        run: npm run smoke
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/native-v')
+        run: node scripts/check-version.mjs
+      - name: Package desktop applications
+        shell: bash
+        run: |
+          if [[ -z "${CSC_LINK:-}" ]]; then
+            export CSC_IDENTITY_AUTO_DISCOVERY=false
+          fi
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID; do
+            if [[ -z "${!name}" ]]; then unset "$name"; fi
+          done
+          npm run package:desktop -- ${{ matrix.package-args }}
+        env:
+          CSC_LINK: ${{ startsWith(github.ref, 'refs/tags/native-v') && secrets.MACOS_CERTIFICATE || '' }}
+          CSC_KEY_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/native-v') && secrets.MACOS_CERTIFICATE_PASSWORD || '' }}
+          APPLE_ID: ${{ startsWith(github.ref, 'refs/tags/native-v') && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ startsWith(github.ref, 'refs/tags/native-v') && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ startsWith(github.ref, 'refs/tags/native-v') && secrets.APPLE_TEAM_ID || '' }}
+      - name: Exercise packaged desktop through real renderer IPC
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            sudo chown root:root release/linux-unpacked/chrome-sandbox
+            sudo chmod 4755 release/linux-unpacked/chrome-sandbox
+            xvfb-run -a npm run smoke:desktop
+          else
+            npm run smoke:desktop
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: desktop-smoke-${{ matrix.platform }}
+          path: native/artifacts/desktop-*.png
+          retention-days: 14
+      - name: Package plugins and checksums
+        run: npm run package:plugins -- ${{ matrix.platform == 'macos' && '--checksums-only' || '' }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: beads-native-${{ matrix.platform }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            native/release/*.AppImage
+            native/release/*.tar.gz
+            native/release/*.dmg
+            native/release/*.zip
+            native/release/SHA256SUMS
+  release:
+    if: startsWith(github.ref, 'refs/tags/native-v')
+    needs: [browser-hud, build]
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: native
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: beads-native-*
+          path: native/downloaded
+      - name: Collect verified release artifacts
+        run: node scripts/collect-release.mjs
+      - name: Publish native repository release
+        run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --generate-notes --latest=false --title "Beads HUD Native $GITHUB_REF_NAME"
+        env:
+          GH_TOKEN: ${{ github.token }}

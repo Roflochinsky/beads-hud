@@ -1,0 +1,69 @@
+/* Scoped to Beads: never restyle Tern's other panes or global chrome. */
+.sf-main[data-surface='plugin.beads.board'],
+.sf-dock[data-surface='plugin.beads.board'] {
+  --grad: #271a00;
+  --grad-ink: #fdfbfa;
+  --t1: #27251e;
+  --t2: #5b5953;
+  --t3: #69665f;
+  --t4: #77736b;
+  --ink: #27251e;
+  --accent: #271a00;
+  --accent-ink: #271a00;
+  --accent-fill: #271a00;
+  --tv-fg: #27251e;
+  --tv-cur: #27251e;
+  --panel: #fdfbfa;
+  --card: #ffffff;
+  --raise: #f3f1ed;
+  --tbl-head: #f3f1ed;
+  --code-bg: #f3f1ed;
+  --l1: rgba(39, 37, 30, 0.06);
+  --l2: rgba(39, 37, 30, 0.12);
+  --l3: rgba(39, 37, 30, 0.24);
+  --l4: rgba(39, 37, 30, 0.36);
+  background: #fdfbfa;
+  color: #27251e;
+  font-size: 14px;
+  padding: 12px;
+}
+[data-surface='plugin.beads.board'] .sf-row[data-role='beads-board'] {
+  align-items: flex-start;
+}
+.sf-main[data-surface='plugin.beads.board'] {
+  overflow: auto;
+}
+[data-surface='plugin.beads.board'] [data-role='beads-column'] {
+  flex: 1;
+  min-width: 220px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #f3f1ed;
+}
+[data-surface='plugin.beads.board'] [data-role='beads-issue'],
+[data-surface='plugin.beads.board'] [data-role='beads-selected'] {
+  background: #ffffff;
+  border: 1px solid rgba(39, 37, 30, 0.12);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: none;
+}
+[data-surface='plugin.beads.board'] [data-role='beads-selected'] {
+  border-color: #27251e;
+}
+[data-surface='plugin.beads.board'] [data-role='beads-form'] {
+  padding: 12px;
+  background: #ffffff;
+  border-radius: 12px;
+}
+[data-surface='plugin.beads.board'] .sf-row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+[data-surface='plugin.beads.board'] .sf-t-strong {
+  font-weight: 500;
+}
+[data-surface='plugin.beads.board'] .sf-t-title {
+  font-size: 16px;
+  font-weight: 500;
+}

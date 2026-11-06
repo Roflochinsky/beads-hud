@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>beads · macOS menu bar</title>
+  <link rel="stylesheet" href="../fonts/onest.css">
+  <link rel="stylesheet" href="../styles/tokens.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="tray.css">
+  <link rel="stylesheet" href="macos.css">
+</head>
+<body data-host="macos">
+  <header class="mac-menubar">
+    <div class="mac-menubar__side mac-menubar__side--apps">
+      <span class="mac-menubar__item mac-menubar__item--app">Terminal</span>
+      <span class="mac-menubar__item">Shell</span><span class="mac-menubar__item">Edit</span><span class="mac-menubar__item">View</span><span class="mac-menubar__item">Window</span><span class="mac-menubar__item">Help</span>
+    </div>
+    <div class="mac-menubar__side">
+      <button class="mac-menubar__item" id="tray-item" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tray-host">
+        <span class="tray-mark" aria-hidden="true"><span class="bead bead--done" data-bead="done"></span><span class="bead bead--active" data-bead="active"></span><span class="bead" data-bead="open"></span></span>
+        <span class="tray-count" data-tray-count>6</span>
+        <span class="tray-dot" data-tray-dot hidden></span>
+      </button>
+      <span class="mac-menubar__item" aria-label="Wi-Fi"><svg class="icon" aria-hidden="true"><use href="#i-wifi"></use></svg></span>
+      <span class="mac-menubar__item" aria-label="Battery"><svg class="icon" aria-hidden="true"><use href="#i-battery_full"></use></svg></span>
+      <span class="mac-menubar__item">Wed 4 Nov&ensp;10:42</span>
+    </div>
+  </header>
+
+  <main class="mac-window" aria-label="Terminal">
+    <div class="mac-window__bar"><span class="mac-window__dots" aria-hidden="true"><span class="mac-window__dot"></span><span class="mac-window__dot"></span><span class="mac-window__dot"></span></span><span>beads-board: zsh</span></div>
+    <pre class="term" data-term="ready" aria-hidden="true"></pre>
+  </main>
+
+  <div class="tray-host" id="tray-host" role="dialog" aria-label="beads-board"></div>
+
+  <script src="../js/icons.js"></script>
+  <script src="../js/agents.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="tray.js"></script>
+</body>
+</html>

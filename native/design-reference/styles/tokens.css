@@ -1,0 +1,82 @@
+/* Design tokens. Values come from the pinned design reference;
+   Onest stands in for the proprietary pplxSans. */
+:root {
+  /* Palette: warm monochrome */
+  --color-bg: #fdfbfa;
+  --color-surface: #ffffff;
+  --color-wash: #f6f3ef;          /* second neutral layer: rail, column ground */
+  --color-wash-strong: #efebe5;
+  --color-wash-deep: #e9e4dc;      /* drop target under the pointer */
+  --color-ink: #27251e;
+  --color-ink-strong: #000000;
+  --color-ink-2: #6a6860;         /* secondary text, 5.4:1 on --color-bg */
+  --color-ink-3: #9a978e;         /* icons at rest, disabled; not for body text */
+  --color-accent: #271a00;        /* primary button ground */
+  --color-on-accent: #fdfbfa;
+
+  --color-line: rgba(39, 26, 0, 0.1);
+  --color-line-strong: rgba(39, 26, 0, 0.2);
+  --color-hover: rgba(0, 0, 0, 0.03);
+  --color-subtle: rgba(0, 0, 0, 0.05);
+  --color-pressed: rgba(0, 0, 0, 0.08);
+  --color-selected: rgba(39, 26, 0, 0.07);
+  --color-ripple: rgba(39, 37, 30, 0.14);
+  --color-scrim: rgba(39, 37, 30, 0.24);
+
+  /* Type */
+  --font-sans: "Onest", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --text-caption: 12px;
+  --text-small: 14px;
+  --text-body: 16px;
+  --text-title: 24px;             /* documentation page titles only; the board stays on 12/14/16 */
+  --leading-caption: 16px;
+  --leading-small: 20px;
+  --leading-body: 24px;
+  --leading-title: 32px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  /* Spacing: 4px scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;                 /* the reference's card padding */
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Depth: the reference's single shadow. Overlays separate from the ground
+     with it plus a 1px line; dialogs add a scrim. */
+  --shadow-raised: rgba(0, 0, 0, 0.08) 0px 1px 2px 0px;
+  --shadow-overlay: var(--shadow-raised);
+
+  --focus-ring: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-ink);
+
+  /* Layers */
+  --z-bar: 20;
+  --z-drawer: 30;
+  --z-snackbar: 40;
+  --z-menu: 2000;
+  --z-dialog: 2000;
+  --z-tooltip: 2100;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+
+  /* Layout */
+  --bar-height: 56px;
+  --rail-width: 240px;
+  --column-width: 304px;
+  --drawer-width: 480px;
+}

@@ -1,0 +1,85 @@
+{
+  "name": "@roflochinsky/beads-hud-native",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Beads Board for Tern, Paseo, Omarchy, Linux and macOS",
+  "type": "module",
+  "main": "dist/desktop/main.js",
+  "desktopName": "dev.roflochinsky.beads.desktop",
+  "author": "Roflochinsky",
+  "license": "MIT",
+  "repository": "https://github.com/Roflochinsky/beads-hud",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.paseo.json",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:desktop": "node scripts/smoke-desktop.mjs",
+    "start": "electron .",
+    "serve": "node dist/server/main.js",
+    "package:desktop": "electron-builder --publish never",
+    "package:plugins": "node scripts/package-plugins.mjs"
+  },
+  "devDependencies": {
+    "@getpaseo/plugin": "0.14.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@tanstack/react-query": "5.90.11",
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.0",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "esbuild": "0.28.2",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "typescript": "7.0.2",
+    "zod": "4.4.3"
+  },
+  "build": {
+    "appId": "dev.roflochinsky.beads",
+    "productName": "Beads Board",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/desktop/**",
+      "dist/ui/**",
+      "package.json"
+    ],
+    "asar": true,
+    "extraResources": [
+      {
+        "from": "dist/desktop/waybar.js",
+        "to": "waybar.mjs"
+      }
+    ],
+    "linux": {
+      "icon": "resources/icon.png",
+      "executableName": "beads-board",
+      "syncDesktopName": true,
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Development",
+      "desktop": {
+        "entry": {
+          "StartupWMClass": "dev.roflochinsky.beads"
+        }
+      },
+      "artifactName": "beads-board-${version}-linux-${arch}.${ext}"
+    },
+    "mac": {
+      "icon": "resources/icon.png",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.developer-tools",
+      "artifactName": "beads-board-${version}-macos-${arch}.${ext}",
+      "hardenedRuntime": true
+    }
+  }
+}

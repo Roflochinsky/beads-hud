@@ -1,0 +1,13 @@
+schema = 1
+id = "beads"
+name = "Beads"
+version = "0.1.1"
+description = "Live Beads tasks and dependency actions in a native Tern block."
+icon = "box"
+host = "host.luau"
+styles = ["beads.css"]
+
+[[blocks]]
+id = "board"
+title = "Beads"
+icon = "box"

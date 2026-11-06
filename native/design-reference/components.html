@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Components · beads board</title>
+  <link rel="stylesheet" href="fonts/onest.css">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <style>
+    /* sheet layout only; not part of the component library */
+    .sheet { max-width: 1120px; margin: 0 auto; padding: 32px 24px 96px; }
+    .sheet__head { display: flex; flex-direction: column; gap: 4px; padding-bottom: 32px; border-bottom: 1px solid var(--color-line); }
+    .sheet__title { font-size: var(--text-title); line-height: var(--leading-title); letter-spacing: -0.01em; }
+    .sheet__lede { color: var(--color-ink-2); max-width: 65ch; }
+    .sheet__block { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 24px; padding: 32px 0; border-bottom: 1px solid var(--color-line); }
+    .sheet__name { display: flex; flex-direction: column; gap: 4px; }
+    .sheet__name h2 { font-size: 14px; }
+    .sheet__name p { color: var(--color-ink-2); font-size: 12px; line-height: 16px; }
+    .sheet__row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .sheet__stack { display: flex; flex-direction: column; gap: 16px; }
+    .sheet__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+    .sheet__cell { display: flex; flex-direction: column; gap: 8px; }
+    .sheet__caption { color: var(--color-ink-2); font-size: 12px; line-height: 16px; }
+    .sheet__swatch { width: 100%; height: 48px; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--color-line); }
+    .sheet .column { flex: none; height: auto; max-width: none; }
+    .sheet .table-view { max-width: 100%; }
+    @media (max-width: 767px) { .sheet__block { grid-template-columns: 1fr; gap: 12px; } }
+  </style>
+</head>
+<body>
+<main class="sheet">
+  <header class="sheet__head">
+    <h1 class="sheet__title">beads board · components</h1>
+    <p class="sheet__lede">Every block the board uses, in its states. Class names follow BEM: blocks, their elements after a double underscore, their modifiers after a double hyphen. Tokens live in <span class="mono">styles/tokens.css</span>, blocks in <span class="mono">styles/components.css</span>, the page shell in <span class="mono">styles/layout.css</span>.</p>
+  </header>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>Palette</h2><p>Warm monochrome. Urgency and state are carried by ink weight, shape and icons, never by hue.</p></div>
+    <div class="sheet__grid">
+      <div class="sheet__cell"><span class="sheet__swatch" style="background:var(--color-bg)"></span><span class="sheet__caption">--color-bg #fdfbfa</span></div>
+      <div class="sheet__cell"><span class="sheet__swatch" style="background:var(--color-wash)"></span><span class="sheet__caption">--color-wash #f6f3ef · rail, columns</span></div>
+      <div class="sheet__cell"><span class="sheet__swatch" style="background:var(--color-wash-strong)"></span><span class="sheet__caption">--color-wash-strong #efebe5</span></div>
+      <div class="sheet__cell"><span class="sheet__swatch" style="background:var(--color-ink-2)"></span><span class="sheet__caption">--color-ink-2 #6a6860 · secondary text</span></div>
+      <div class="sheet__cell"><span class="sheet__swatch" style="background:var(--color-ink)"></span><span class="sheet__caption">--color-ink #27251e</span></div>
+      <div class="sheet__cell"><span class="sheet__swatch" style="background:var(--color-accent)"></span><span class="sheet__caption">--color-accent #271a00 · primary</span></div>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>btn</h2><p>Modifiers: primary, secondary, outlined, text, icon, sm, block. Ink ripple on press.</p></div>
+    <div class="sheet__stack">
+      <div class="sheet__row">
+        <button class="btn btn--primary" type="button"><svg class="icon btn__icon" aria-hidden="true"><use href="#i-add"></use></svg>New issue<kbd class="btn__kbd">N</kbd></button>
+        <button class="btn btn--secondary" type="button">Close</button>
+        <button class="btn btn--outlined" type="button">Outlined</button>
+        <button class="btn btn--text" type="button">Cancel</button>
+        <button class="btn btn--icon" type="button" aria-label="More"><svg class="icon" aria-hidden="true"><use href="#i-more_horiz"></use></svg></button>
+        <button class="btn btn--icon" type="button" aria-pressed="true" aria-label="Toggled"><svg class="icon" aria-hidden="true"><use href="#i-account_tree"></use></svg></button>
+      </div>
+      <div class="sheet__row">
+        <button class="btn btn--primary btn--sm" type="button">Small</button>
+        <button class="btn btn--secondary btn--sm" type="button">Small</button>
+        <button class="btn btn--primary" type="button" disabled>Disabled</button>
+        <button class="btn btn--secondary" type="button" disabled>Disabled</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>chip</h2><p>Modifiers: filter and selected in the filter bar; label and priority with p0 to p4 on cards.</p></div>
+    <div class="sheet__stack">
+      <div class="sheet__row">
+        <button class="chip chip--filter" type="button"><svg class="icon chip__icon" aria-hidden="true"><use href="#i-category"></use></svg><span class="chip__label">Type</span><svg class="icon chip__caret" aria-hidden="true"><use href="#i-arrow_drop_down"></use></svg></button>
+        <button class="chip chip--filter chip--selected" type="button"><svg class="icon chip__icon" aria-hidden="true"><use href="#i-check"></use></svg><span class="chip__label">Priority: <span class="chip__value">P0</span></span><svg class="icon chip__caret" aria-hidden="true"><use href="#i-arrow_drop_down"></use></svg></button>
+        <button class="chip chip--selected" type="button"><svg class="icon chip__icon" aria-hidden="true"><use href="#i-stacks"></use></svg><span class="chip__label">Board MVP</span><svg class="icon chip__caret" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="sheet__row">
+        <span class="chip chip--priority chip--p0">P0</span>
+        <span class="chip chip--priority chip--p1">P1</span>
+        <span class="chip chip--priority chip--p2">P2</span>
+        <span class="chip chip--priority chip--p3">P3</span>
+        <span class="chip chip--priority chip--p4">P4</span>
+        <span class="chip chip--label">storage</span>
+        <span class="chip chip--label">a11y</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>field, search, select</h2><p>Material outlined field with a floating label. Modifiers: error, static, dense.</p></div>
+    <div class="sheet__grid">
+      <div class="field"><input class="field__input" id="f1" type="text" placeholder="Fix crash on empty workspace"><label class="field__label" for="f1">Title</label><div class="field__helper">Helper text</div></div>
+      <div class="field"><input class="field__input" id="f2" type="text" value="Poll bd for changes" placeholder=" "><label class="field__label" for="f2">Title</label></div>
+      <div class="field field--error"><input class="field__input" id="f3" type="text" placeholder=" "><label class="field__label" for="f3">Title</label><div class="field__helper"><svg class="icon" aria-hidden="true"><use href="#i-block"></use></svg>Give the issue a title.</div></div>
+      <div class="search"><svg class="icon search__icon" aria-hidden="true"><use href="#i-lock"></use></svg><input class="search__input" type="search" placeholder="Search by title, ID or label" aria-label="Search"><kbd class="kbd search__kbd">/</kbd></div>
+      <span class="select"><select class="select__input" aria-label="Sort"><option>Priority</option><option>Updated</option></select><svg class="icon select__caret" aria-hidden="true"><use href="#i-arrow_drop_down"></use></svg></span>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>segmented, switch, checkbox, radio, tabs</h2><p>Selection controls.</p></div>
+    <div class="sheet__stack">
+      <div class="sheet__row">
+        <div class="segmented" role="radiogroup" aria-label="Priority"><button class="segmented__option" type="button" role="radio" aria-checked="false">P0</button><button class="segmented__option" type="button" role="radio" aria-checked="true">P1</button><button class="segmented__option" type="button" role="radio" aria-checked="false">P2</button><button class="segmented__option" type="button" role="radio" aria-checked="false">P3</button><button class="segmented__option" type="button" role="radio" aria-checked="false">P4</button></div>
+        <label class="switch"><input class="switch__input" type="checkbox" checked><span class="switch__track"><span class="switch__thumb"></span></span>Closed</label>
+        <label class="checkbox"><input class="checkbox__input" type="checkbox" checked><span>Create another</span></label>
+        <label class="radio"><input class="radio__input" type="radio" name="r" checked><span>Next Monday</span></label>
+        <label class="radio"><input class="radio__input" type="radio" name="r"><span>Tomorrow</span></label>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Example"><button class="tabs__tab" role="tab" aria-selected="true" type="button">Details</button><button class="tabs__tab" role="tab" aria-selected="false" type="button">Dependencies<span class="tabs__count">3</span></button><button class="tabs__tab" role="tab" aria-selected="false" type="button">Activity<span class="tabs__count">4</span></button><span class="tabs__indicator" style="width:76px"></span></div>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>avatar, bead, glyph</h2><p>People are round with initials; agents are square ink tiles carrying the agent's one-ink logo (Claude, Codex, omp, Grok, DeepSeek, GLM). Beads: open, in progress, done. A glyph slot gives beads and icons one fixed width so labels line up.</p></div>
+    <div class="sheet__row">
+      <span class="avatar">MH</span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-claude"></use></svg></span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-codex"></use></svg></span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-omp"></use></svg></span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-grok"></use></svg></span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-deepseek"></use></svg></span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-glm"></use></svg></span><span class="avatar avatar--empty"><svg class="icon" aria-hidden="true"><use href="#i-person"></use></svg></span><span class="avatar avatar--lg">DO</span>
+      <span class="bead"></span><span class="bead bead--active"></span><span class="bead bead--done"></span><span class="bead bead--muted"></span><span class="glyph"><span class="bead"></span></span><span class="glyph"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg></span><span class="glyph"><svg class="icon" aria-hidden="true"><use href="#i-snooze"></use></svg></span>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>issue-card</h2><p>Elements: blockers strip, lease row for stale agents, relation badge. Modifiers: closed, chain, dimmed, selected, compact, skeleton.</p></div>
+    <div class="sheet__grid">
+      <article class="issue-card" tabindex="0">
+        <div class="issue-card__top"><svg class="icon issue-card__type" aria-hidden="true"><use href="#i-bug_report"></use></svg><span class="issue-card__id mono">bb-71d2</span><span class="issue-card__spacer"></span><span class="chip chip--priority chip--p0">P0</span></div>
+        <h3 class="issue-card__title">Crash when a workspace has no issues yet</h3>
+        <div class="issue-card__epic"><svg class="icon" aria-hidden="true"><use href="#i-stacks"></use></svg><span class="issue-card__epic-name">Sync and storage</span></div>
+        <div class="issue-card__labels"><span class="chip chip--label">crash</span></div>
+        <div class="issue-card__footer"><span class="issue-card__stat"><svg class="icon" aria-hidden="true"><use href="#i-chat_bubble"></use></svg>2</span></div>
+      </article>
+      <article class="issue-card" tabindex="0">
+        <div class="issue-card__top"><svg class="icon issue-card__type" aria-hidden="true"><use href="#i-task_alt"></use></svg><span class="issue-card__id mono">bb-8d27</span><span class="issue-card__spacer"></span><span class="chip chip--priority chip--p2">P2</span></div>
+        <h3 class="issue-card__title">Sync indicator and manual refresh</h3>
+        <div class="issue-card__blockers"><svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg><span class="issue-card__beads" aria-hidden="true"><span class="bead bead--done"></span><span class="bead"></span></span><span class="issue-card__blockers-text">Waiting on <span class="mono">bb-1e9a</span></span></div>
+      </article>
+      <article class="issue-card" tabindex="0">
+        <div class="issue-card__top"><svg class="icon issue-card__type" aria-hidden="true"><use href="#i-task_alt"></use></svg><span class="issue-card__id mono">bb-0d93</span><span class="issue-card__spacer"></span><span class="chip chip--priority chip--p2">P2</span></div>
+        <h3 class="issue-card__title">Show who holds the lease on in-progress cards</h3>
+        <div class="issue-card__lease"><svg class="icon" aria-hidden="true"><use href="#i-hourglass_disabled"></use></svg><span class="issue-card__lease-text">No heartbeat for 47m</span><button class="btn btn--text btn--sm" type="button">Reclaim</button></div>
+        <div class="issue-card__footer"><span class="issue-card__assignee"><span class="issue-card__assignee-name">codex-2</span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-codex"></use></svg></span></span></div>
+      </article>
+      <article class="issue-card issue-card--chain" tabindex="0">
+        <span class="issue-card__relation"><svg class="icon" aria-hidden="true"><use href="#i-arrow_downward"></use></svg>Blocks this</span>
+        <div class="issue-card__top"><svg class="icon issue-card__type" aria-hidden="true"><use href="#i-lightbulb"></use></svg><span class="issue-card__id mono">bb-a3f8</span><span class="issue-card__spacer"></span><span class="chip chip--priority chip--p1">P1</span></div>
+        <h3 class="issue-card__title">Compute the Ready column from open blockers</h3>
+        <div class="issue-card__footer"><span class="issue-card__stat"><svg class="icon" aria-hidden="true"><use href="#i-ecg_heart"></use></svg>4m</span><span class="issue-card__assignee"><span class="issue-card__assignee-name">claude-1</span><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-claude"></use></svg></span></span></div>
+      </article>
+      <article class="issue-card issue-card--dimmed" tabindex="0">
+        <div class="issue-card__top"><svg class="icon issue-card__type" aria-hidden="true"><use href="#i-task_alt"></use></svg><span class="issue-card__id mono">bb-3f6c</span><span class="issue-card__spacer"></span><span class="chip chip--priority chip--p3">P3</span></div>
+        <h3 class="issue-card__title">Dimmed while another card's chain is shown</h3>
+      </article>
+      <article class="issue-card issue-card--closed" tabindex="0">
+        <div class="issue-card__top"><svg class="icon issue-card__type" aria-hidden="true"><use href="#i-task_alt"></use></svg><span class="issue-card__id mono">bb-4e1c</span><span class="issue-card__spacer"></span><span class="chip chip--priority chip--p0">P0</span></div>
+        <h3 class="issue-card__title">Read issues from Dolt through bd export</h3>
+        <div class="issue-card__footer"><span class="issue-card__stat">Closed 2h ago</span><span class="issue-card__assignee"><span class="avatar">DO</span></span></div>
+      </article>
+      <article class="issue-card issue-card--selected issue-card--compact" tabindex="0">
+        <div class="issue-card__top"><svg class="icon issue-card__type" aria-hidden="true"><use href="#i-lightbulb"></use></svg><span class="issue-card__id mono">bb-58e0</span><span class="issue-card__spacer"></span><span class="chip chip--priority chip--p1">P1</span></div>
+        <h3 class="issue-card__title">Selected and compact</h3>
+        <div class="issue-card__footer"><span class="issue-card__stat"><svg class="icon" aria-hidden="true"><use href="#i-schedule"></use></svg>3h</span><span class="issue-card__assignee"><span class="avatar">MH</span></span></div>
+      </article>
+      <div class="issue-card issue-card--skeleton" aria-hidden="true">
+        <div class="issue-card__top"><span class="skeleton" style="width:56px;height:12px"></span><span class="issue-card__spacer"></span><span class="skeleton" style="width:28px;height:20px"></span></div>
+        <span class="skeleton" style="width:88%;height:14px"></span><span class="skeleton" style="width:56%;height:14px"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>column</h2><p>Drop feedback: a valid target names the effect, an invalid one names the reason. The empty element teaches the next step.</p></div>
+    <div class="sheet__grid">
+      <section class="column column--drop-valid" aria-label="Valid target">
+        <header class="column__header"><span class="bead bead--active" aria-hidden="true"></span><h3 class="column__title">In progress</h3><span class="column__count">4</span></header>
+        <div class="column__drop-hint"><svg class="icon" aria-hidden="true"><use href="#i-south"></use></svg>Claim as you</div>
+        <div class="column__body"><div class="column__empty"><span class="column__empty-title">Nothing in progress</span><span>Drag a ready issue here to claim it.</span></div></div>
+      </section>
+      <section class="column column--drop-invalid" aria-label="Invalid target">
+        <header class="column__header"><span class="bead" aria-hidden="true"></span><h3 class="column__title">Ready</h3><span class="column__count">7</span></header>
+        <div class="column__drop-hint"><svg class="icon" aria-hidden="true"><use href="#i-block"></use></svg>Still waits on 1 open issue</div>
+        <div class="column__body"><div class="column__empty"><span class="column__empty-title">Nothing is ready</span><span>Every open issue waits on another one.</span></div></div>
+      </section>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>table-view, data-table</h2><p>The table layout. Sortable headers with aria-sort, one row per issue. Row modifiers: selected, chain, dimmed, closed. Columns drop out as the table narrows.</p></div>
+    <section class="table-view" aria-label="Example table">
+      <div class="table-view__scroll">
+        <table class="data-table">
+          <caption class="visually-hidden">Example rows</caption>
+          <thead class="data-table__head"><tr><th class="data-table__th data-table__th--status" scope="col"><button class="data-table__sort" type="button">Status<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--id" scope="col"><button class="data-table__sort" type="button">ID<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--title" scope="col"><button class="data-table__sort" type="button">Title<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--priority" scope="col" aria-sort="ascending"><button class="data-table__sort" type="button">Priority<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--blockers" scope="col">Blocked by</th><th class="data-table__th data-table__th--assignee" scope="col"><button class="data-table__sort" type="button">Assignee<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--type" scope="col"><button class="data-table__sort" type="button">Type<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--epic" scope="col"><button class="data-table__sort" type="button">Epic<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--labels" scope="col">Labels</th><th class="data-table__th data-table__th--updated" scope="col"><button class="data-table__sort" type="button">Updated<svg class="icon" aria-hidden="true"><use href="#i-arrow_upward"></use></svg></button></th><th class="data-table__th data-table__th--menu" scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+          <tbody>
+        <tr class="data-table__row " tabindex="0" data-id="bb-71d2">
+          <td class="data-table__cell data-table__cell--status"><span class="data-table__status"><span class="bead" aria-hidden="true"></span><span>Ready</span></span></td>
+          <td class="data-table__cell data-table__cell--id"><span class="mono">bb-71d2</span></td>
+          <td class="data-table__cell data-table__cell--title"><div class="data-table__title-wrap"><span class="data-table__title">Crash when a workspace has no issues yet</span><span class="data-table__relation"></span></div></td>
+          <td class="data-table__cell data-table__cell--priority"><span class="chip chip--priority chip--p0">P0</span></td>
+          <td class="data-table__cell data-table__cell--blockers"><span class="visually-hidden">None</span></td>
+          <td class="data-table__cell data-table__cell--assignee"><span class="data-table__person"><span class="avatar">DO</span><span class="data-table__person-name">Dev Okafor</span></span></td>
+          <td class="data-table__cell data-table__cell--type"><span class="data-table__type"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-bug_report"></use></svg>Bug</span></td>
+          <td class="data-table__cell data-table__cell--epic"><span class="data-table__epic">Sync and storage</span></td>
+          <td class="data-table__cell data-table__cell--labels"><span class="chip chip--label">crash</span></td>
+          <td class="data-table__cell data-table__cell--updated"><span class="data-table__muted">5h ago</span></td>
+          <td class="data-table__cell data-table__cell--menu"><button class="btn btn--icon btn--sm data-table__menu" type="button" aria-label="Actions for bb-71d2"><svg class="icon" aria-hidden="true"><use href="#i-more_horiz"></use></svg></button></td>
+        </tr>
+        <tr class="data-table__row data-table__row--chain" tabindex="-1" data-id="bb-a3f8">
+          <td class="data-table__cell data-table__cell--status"><span class="data-table__status"><span class="bead bead--active" aria-hidden="true"></span><span>In progress</span></span></td>
+          <td class="data-table__cell data-table__cell--id"><span class="mono">bb-a3f8</span></td>
+          <td class="data-table__cell data-table__cell--title"><div class="data-table__title-wrap"><span class="data-table__title">Compute the Ready column from open blockers</span><span class="data-table__relation"><svg class="icon" aria-hidden="true"><use href="#i-arrow_downward"></use></svg>Blocks this</span></div></td>
+          <td class="data-table__cell data-table__cell--priority"><span class="chip chip--priority chip--p1">P1</span></td>
+          <td class="data-table__cell data-table__cell--blockers"><span class="visually-hidden">None</span></td>
+          <td class="data-table__cell data-table__cell--assignee"><span class="data-table__person"><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-claude"></use></svg></span><span class="data-table__person-name">claude-1</span></span></td>
+          <td class="data-table__cell data-table__cell--type"><span class="data-table__type"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-lightbulb"></use></svg>Feature</span></td>
+          <td class="data-table__cell data-table__cell--epic"><span class="data-table__epic">Board MVP</span></td>
+          <td class="data-table__cell data-table__cell--labels"><span class="chip chip--label">board</span></td>
+          <td class="data-table__cell data-table__cell--updated"><span class="data-table__muted">4m ago</span></td>
+          <td class="data-table__cell data-table__cell--menu"><button class="btn btn--icon btn--sm data-table__menu" type="button" aria-label="Actions for bb-a3f8"><svg class="icon" aria-hidden="true"><use href="#i-more_horiz"></use></svg></button></td>
+        </tr>
+        <tr class="data-table__row data-table__row--selected" tabindex="-1" data-id="bb-0d93">
+          <td class="data-table__cell data-table__cell--status"><span class="data-table__status"><span class="bead bead--active" aria-hidden="true"></span><span>In progress</span><button class="btn btn--text btn--sm data-table__reclaim" type="button">Reclaim</button></span></td>
+          <td class="data-table__cell data-table__cell--id"><span class="mono">bb-0d93</span></td>
+          <td class="data-table__cell data-table__cell--title"><div class="data-table__title-wrap"><span class="data-table__title">Show who holds the lease on in-progress cards</span><span class="data-table__relation"></span></div></td>
+          <td class="data-table__cell data-table__cell--priority"><span class="chip chip--priority chip--p2">P2</span></td>
+          <td class="data-table__cell data-table__cell--blockers"><span class="visually-hidden">None</span></td>
+          <td class="data-table__cell data-table__cell--assignee"><span class="data-table__person"><span class="avatar avatar--agent"><svg class="icon" aria-hidden="true"><use href="#a-codex"></use></svg></span><span class="data-table__person-name">codex-2</span></span></td>
+          <td class="data-table__cell data-table__cell--type"><span class="data-table__type"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-task_alt"></use></svg>Task</span></td>
+          <td class="data-table__cell data-table__cell--epic"><span class="data-table__epic">Board MVP</span></td>
+          <td class="data-table__cell data-table__cell--labels"><span class="chip chip--label">agents</span></td>
+          <td class="data-table__cell data-table__cell--updated"><span class="data-table__muted">47m ago</span></td>
+          <td class="data-table__cell data-table__cell--menu"><button class="btn btn--icon btn--sm data-table__menu" type="button" aria-label="Actions for bb-0d93"><svg class="icon" aria-hidden="true"><use href="#i-more_horiz"></use></svg></button></td>
+        </tr>
+        <tr class="data-table__row " tabindex="-1" data-id="bb-8d27">
+          <td class="data-table__cell data-table__cell--status"><span class="data-table__status"><svg class="icon icon--sm data-table__glyph" aria-hidden="true"><use href="#i-lock"></use></svg><span>Blocked</span></span></td>
+          <td class="data-table__cell data-table__cell--id"><span class="mono">bb-8d27</span></td>
+          <td class="data-table__cell data-table__cell--title"><div class="data-table__title-wrap"><span class="data-table__title">Sync indicator and manual refresh</span><span class="data-table__relation"></span></div></td>
+          <td class="data-table__cell data-table__cell--priority"><span class="chip chip--priority chip--p2">P2</span></td>
+          <td class="data-table__cell data-table__cell--blockers"><span class="data-table__blockers"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-lock"></use></svg><span><span class="mono">bb-1e9a</span></span></span></td>
+          <td class="data-table__cell data-table__cell--assignee"><span class="data-table__person"><span class="avatar avatar--empty"><svg class="icon" aria-hidden="true"><use href="#i-person"></use></svg></span><span class="data-table__person-name data-table__muted">Unassigned</span></span></td>
+          <td class="data-table__cell data-table__cell--type"><span class="data-table__type"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-task_alt"></use></svg>Task</span></td>
+          <td class="data-table__cell data-table__cell--epic"><span class="data-table__epic">Sync and storage</span></td>
+          <td class="data-table__cell data-table__cell--labels"><span class="chip chip--label">storage</span></td>
+          <td class="data-table__cell data-table__cell--updated"><span class="data-table__muted">2h ago</span></td>
+          <td class="data-table__cell data-table__cell--menu"><button class="btn btn--icon btn--sm data-table__menu" type="button" aria-label="Actions for bb-8d27"><svg class="icon" aria-hidden="true"><use href="#i-more_horiz"></use></svg></button></td>
+        </tr>
+        <tr class="data-table__row data-table__row--closed" tabindex="-1" data-id="bb-4e1c">
+          <td class="data-table__cell data-table__cell--status"><span class="data-table__status"><span class="bead bead--done" aria-hidden="true"></span><span>Closed</span></span></td>
+          <td class="data-table__cell data-table__cell--id"><span class="mono">bb-4e1c</span></td>
+          <td class="data-table__cell data-table__cell--title"><div class="data-table__title-wrap"><span class="data-table__title">Read issues from Dolt through bd export</span><span class="data-table__relation"></span></div></td>
+          <td class="data-table__cell data-table__cell--priority"><span class="chip chip--priority chip--p0">P0</span></td>
+          <td class="data-table__cell data-table__cell--blockers"><span class="visually-hidden">None</span></td>
+          <td class="data-table__cell data-table__cell--assignee"><span class="data-table__person"><span class="avatar">DO</span><span class="data-table__person-name">Dev Okafor</span></span></td>
+          <td class="data-table__cell data-table__cell--type"><span class="data-table__type"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-task_alt"></use></svg>Task</span></td>
+          <td class="data-table__cell data-table__cell--epic"><span class="data-table__epic">Sync and storage</span></td>
+          <td class="data-table__cell data-table__cell--labels"><span class="chip chip--label">storage</span></td>
+          <td class="data-table__cell data-table__cell--updated"><span class="data-table__muted">2h ago</span></td>
+          <td class="data-table__cell data-table__cell--menu"><button class="btn btn--icon btn--sm data-table__menu" type="button" aria-label="Actions for bb-4e1c"><svg class="icon" aria-hidden="true"><use href="#i-more_horiz"></use></svg></button></td>
+        </tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="table-view__footer"><span class="table-view__count">5 issues</span><span class="table-view__sort">Sorted by priority, ascending</span><button class="btn btn--text btn--sm" type="button"><svg class="icon btn__icon" aria-hidden="true"><use href="#i-add"></use></svg>Add issue</button></footer>
+    </section>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>bead-thread</h2><p>The dependency chain in the drawer: blockers above, the issue itself, dependents below.</p></div>
+    <ul class="bead-thread" style="max-width:440px">
+      <li class="bead-thread__group">Blocked by · 1 open of 2</li>
+      <li class="bead-thread__item bead-thread__item--link" tabindex="0"><span class="bead-thread__node"><span class="bead bead--done"></span></span><span class="bead-thread__body"><span class="bead-thread__title">Read issues from Dolt through bd export --json</span><span class="bead-thread__meta"><span class="mono">bb-4e1c</span><span>Closed</span></span></span><span class="chip chip--priority chip--p0">P0</span></li>
+      <li class="bead-thread__item bead-thread__item--link" tabindex="0"><span class="bead-thread__node"><span class="bead"></span></span><span class="bead-thread__body"><span class="bead-thread__title">Poll bd for changes every 10 seconds</span><span class="bead-thread__meta"><span class="mono">bb-1e9a</span><span>Ready</span></span></span><span class="chip chip--priority chip--p2">P2</span></li>
+      <li class="bead-thread__item bead-thread__item--current"><span class="bead-thread__node"><span class="bead"></span></span><span class="bead-thread__body"><span class="bead-thread__title">Sync indicator and manual refresh</span><span class="bead-thread__meta"><span class="mono">bb-8d27</span><span>Blocked</span></span></span><span class="chip chip--priority chip--p2">P2</span></li>
+    </ul>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>menu, tooltip, snackbar, banner</h2><p>Overlays, shown here with their static modifier.</p></div>
+    <div class="sheet__grid">
+      <div class="menu menu--static" role="menu">
+        <button class="menu__item" type="button" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-open_in_new"></use></svg><span class="menu__item-label">Open</span><span class="menu__item-meta">Enter</span></button>
+        <button class="menu__item" type="button" role="menuitem"><svg class="icon" aria-hidden="true"><use href="#i-play_arrow"></use></svg><span class="menu__item-label">Claim</span></button>
+        <hr class="menu__divider"><div class="menu__heading">Move to</div>
+        <button class="menu__item" type="button" role="menuitem" aria-disabled="true"><svg class="icon" aria-hidden="true"><use href="#i-block"></use></svg><span class="menu__item-label">In progress</span><span class="menu__item-meta">Finish its blockers first</span></button>
+      </div>
+      <div class="sheet__stack">
+        <span class="tooltip tooltip--static">P0 · Critical</span>
+        <div class="snackbar snackbar--static"><span class="snackbar__message">Closed <span class="mono">bb-4e1c</span>. <span class="mono">bb-8d27</span> is ready now.</span><button class="snackbar__action" type="button">Undo</button></div>
+        <div class="banner" role="alert"><svg class="icon banner__icon" aria-hidden="true"><use href="#i-sync_problem"></use></svg><div class="banner__text"><div class="banner__title">Can't read the beads database</div><div class="banner__detail">Moves are paused.</div></div><button class="btn btn--primary btn--sm" type="button">Retry</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet__block">
+    <div class="sheet__name"><h2>empty-state, command</h2><p>Empty states say what happened and what to do next. Commands mirror the CLI.</p></div>
+    <div class="empty-state">
+      <div class="empty-state__head"><svg class="icon" aria-hidden="true"><use href="#i-database"></use></svg><h3 class="empty-state__title">No beads database in this folder</h3></div>
+      <p class="empty-state__text">Initialise a database in the repository, then retry.</p>
+      <div class="command" style="width:100%"><span class="command__text mono"><span class="command__prompt">$ </span>bd init</span><button class="btn btn--icon btn--sm" type="button" aria-label="Copy command"><svg class="icon" aria-hidden="true"><use href="#i-content_copy"></use></svg></button></div>
+    </div>
+  </section>
+</main>
+<script src="js/icons.js"></script>
+<script src="js/agents.js"></script>
+</body>
+</html>

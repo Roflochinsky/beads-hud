@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["node", "react"]
+  },
+  "include": ["integrations/paseo/**/*.ts", "integrations/paseo/**/*.tsx"]
+}

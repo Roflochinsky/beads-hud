@@ -25,6 +25,8 @@
 
 </div>
 
+**Native integrations:** [Beads HUD Native](native/README.md) is a separate package for [Tern](native/docs/tern.md), [Paseo](native/docs/paseo.md), and [Omarchy/Linux and macOS](native/docs/desktop.md). It requires Node.js ≥24 and uses `native-v*` releases. The browser HUD documented below remains version 0.6.0 with Node.js ≥22; its npm installation does not add native dependencies.
+
 > [!NOTE]
 > The interface itself is in Russian. This page documents it in English; the product's own labels use beads' vocabulary translated to Russian (открыто / в работе / заблокировано / закрыто).
 

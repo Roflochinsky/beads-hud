@@ -1,0 +1,39 @@
+# Run only against an EMPTY disposable, initialized Beads project.
+# Uses a normal Tern window with --control, never `tern shot`/`serve`.
+# Checks live task state through the native block, not registration callbacks.
+palette "New Beads block"
+key Enter
+plugins expect "No issues in this view"
+key n
+plugins expect "New issue"
+type "Tern native integration smoke"
+key Ctrl+Enter
+plugins expect "Tern native integration smoke"
+plugins expect "P2"
+key j
+key c
+plugins expect "Status: in_progress"
+key 2
+plugins expect "Tern native integration smoke"
+key x
+plugins expect "Closing reason"
+key Ctrl+Enter
+plugins expect "Status: closed"
+key x
+plugins expect "Status: open"
+
+# Correction regression: run these manual assertions in the same disposable
+# native window after the scripted lifecycle above; see docs/tern.md.
+# Edit the title while another actor claims the issue and changes description,
+# priority, notes, acceptance and design. Save must change only the title,
+# preserving the other actor's status, assignee and all untouched fields.
+# Edit a field and restore its original value before saving: it must be omitted.
+# Save an unchanged edit form: no update request should be emitted.
+# Request comments for A, then try table select/activate, a board card,
+# dependency navigation, and j/k before completion. Selection must remain A;
+# only A may show the result. After selecting B, A's comments must disappear.
+# Seed pinned, hooked and custom-status issues in the disposable fixture.
+# All board must show each in Other; j/k must select only rendered cards.
+# A native blocked in_progress issue must appear in Blocked, not Active;
+# an explicit blocked issue must appear even when absent from blockedIds.
+# Ready must match native readyIds, not be inferred from open/custom status.

@@ -1,0 +1,67 @@
+/* macOS host: a menu bar, one window, a menu bar extra. The chrome is a depiction in the board's inks. */
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--color-ink-3); }
+
+.mac-menubar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: var(--z-bar);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-bg) 84%, transparent);
+  backdrop-filter: blur(20px);
+  color: var(--color-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: var(--text-small);
+  line-height: 20px;
+  user-select: none;
+  --tray-bar-bg: var(--color-bg);
+}
+.mac-menubar__side { display: flex; align-items: center; gap: 2px; }
+.mac-menubar__item { position: relative; display: inline-flex; align-items: center; gap: var(--space-1); height: 22px; padding: 0 var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: inherit; font: inherit; }
+.mac-menubar__item--app { font-weight: var(--weight-medium); }
+.mac-menubar__item .icon { --icon-size: 16px; }
+button.mac-menubar__item { cursor: default; }
+button.mac-menubar__item:hover { background: var(--color-subtle); }
+button.mac-menubar__item[aria-expanded="true"] { background: var(--color-pressed); }
+
+.mac-window {
+  position: absolute;
+  top: 72px;
+  left: 6vw;
+  display: flex;
+  flex-direction: column;
+  width: min(880px, 64vw);
+  height: min(560px, 64vh);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-ink);
+  box-shadow: var(--shadow-raised);
+  overflow: hidden;
+}
+.mac-window__bar { display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; height: 32px; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-ink-2); color: var(--color-ink-3); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: var(--text-caption); line-height: var(--leading-caption); text-align: center; }
+.mac-window__dots { display: flex; gap: var(--space-2); }
+.mac-window__dot { width: 12px; height: 12px; border-radius: var(--radius-full); background: var(--color-ink-2); }
+
+/* the extra: a popover under the status item */
+.tray-host { top: 32px; }
+.tray-host:not(.tray-host--open) { transform: translateY(-4px) scale(0.98); }
+
+.notice {
+  --notice-top: 36px;
+  --notice-right: 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-overlay);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+@media (max-width: 767px) {
+  .mac-window { left: var(--space-2); width: calc(100vw - 16px); }
+  .mac-menubar__side--apps .mac-menubar__item:not(.mac-menubar__item--app) { display: none; }
+}

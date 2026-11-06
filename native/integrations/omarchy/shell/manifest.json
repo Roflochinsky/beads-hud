@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "dev.roflochinsky.beads",
+  "name": "Beads Board",
+  "version": "1.0.0",
+  "author": "Roflochinsky",
+  "description": "Live Beads readiness and desktop popover",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "Beads Board",
+    "description": "Shows real Beads readiness and opens the desktop app",
+    "category": "Development",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

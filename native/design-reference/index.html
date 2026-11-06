@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Board · beads-board</title>
+  <link rel="stylesheet" href="fonts/onest.css">
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/layout.css">
+</head>
+<body>
+  <div class="app" id="app">
+
+    <header class="app-bar">
+      <div class="app-bar__start">
+        <button class="btn btn--icon" type="button" data-action="rail-toggle" aria-label="Toggle navigation" data-tooltip="Navigation"><svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg></button>
+        <span class="app-bar__brand">
+          <span class="app-bar__mark" aria-hidden="true"><span class="bead bead--done"></span><span class="bead bead--active"></span><span class="bead"></span></span>
+          <span class="app-bar__brand-text">beads</span>
+        </span>
+      </div>
+
+      <div class="app-bar__center">
+        <div class="search" role="search">
+          <svg class="icon search__icon" aria-hidden="true"><use href="#i-search"></use></svg>
+          <label class="visually-hidden" for="search">Search issues</label>
+          <input class="search__input" id="search" type="search" placeholder="Search by title, ID or label" autocomplete="off" spellcheck="false">
+          <kbd class="kbd search__kbd" aria-hidden="true">/</kbd>
+          <button class="btn btn--icon btn--sm search__clear" id="search-clear" type="button" aria-label="Clear search" hidden><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+        </div>
+      </div>
+
+      <div class="app-bar__end">
+        <button class="app-bar__sync" id="sync" type="button" data-action="sync" data-tooltip="Re-read issues from bd">
+          <svg class="icon" aria-hidden="true"><use href="#i-sync"></use></svg><span class="app-bar__sync-label" id="sync-label" aria-live="polite">Synced 2m ago</span>
+        </button>
+        <button class="btn btn--icon" type="button" data-action="shortcuts" aria-label="Keyboard shortcuts" data-tooltip="Shortcuts · ?"><svg class="icon" aria-hidden="true"><use href="#i-keyboard"></use></svg></button>
+        <button class="btn btn--primary app-bar__new" type="button" data-action="new" aria-label="New issue" aria-keyshortcuts="n">
+          <svg class="icon btn__icon" aria-hidden="true"><use href="#i-add"></use></svg><span class="app-bar__new-label">New issue</span><kbd class="btn__kbd">N</kbd>
+        </button>
+      </div>
+    </header>
+
+    <nav class="rail" id="rail" aria-label="Workspace">
+      <button class="rail__workspace" type="button" data-action="workspace">
+        <span class="rail__workspace-glyph" aria-hidden="true">bb</span>
+        <span class="rail__workspace-text">
+          <span class="rail__workspace-name">beads-board</span>
+          <span class="rail__workspace-path mono">~/code/beads-board</span>
+        </span>
+        <svg class="icon" aria-hidden="true"><use href="#i-arrow_drop_down"></use></svg>
+      </button>
+
+      <div class="rail__section">
+        <h2 class="rail__heading">Views</h2>
+        <div id="rail-views"></div>
+      </div>
+      <div class="rail__section">
+        <h2 class="rail__heading">Epics</h2>
+        <div id="rail-epics"></div>
+      </div>
+      <div class="rail__section">
+        <h2 class="rail__heading">Labels</h2>
+        <div id="rail-labels"></div>
+      </div>
+
+      <div class="rail__footer">
+        <div class="rail__db"><svg class="icon" aria-hidden="true"><use href="#i-database"></use></svg><span><span class="mono">.beads</span> · Dolt · prefix <span class="mono">bb</span></span></div>
+        <p class="rail__note">Demo data. Every issue, person and agent here is invented.</p>
+      </div>
+    </nav>
+
+    <main class="main" id="main">
+      <div class="main__head">
+        <div class="main__title-row">
+          <h1 class="main__title">Board</h1>
+          <div class="main__summary" id="summary" aria-live="polite"></div>
+          <div class="main__title-actions">
+            <div class="segmented main__layout" role="radiogroup" aria-label="Layout">
+              <button class="segmented__option" type="button" role="radio" aria-checked="true" data-action="layout" data-layout="board"><svg class="icon" aria-hidden="true"><use href="#i-view_kanban"></use></svg>Board</button>
+              <button class="segmented__option" type="button" role="radio" aria-checked="false" tabindex="-1" data-action="layout" data-layout="table"><svg class="icon" aria-hidden="true"><use href="#i-table_rows"></use></svg>Table</button>
+            </div>
+            <button class="btn btn--icon" type="button" data-action="spotlight-toggle" aria-pressed="true" aria-label="Highlight dependencies on hover" data-tooltip="Highlight dependencies on hover"><svg class="icon" aria-hidden="true"><use href="#i-account_tree"></use></svg></button>
+            <div class="segmented main__density" role="radiogroup" aria-label="Card density">
+              <button class="segmented__option" type="button" role="radio" aria-checked="true" data-action="density" data-density="comfortable" aria-label="Comfortable" data-tooltip="Comfortable"><svg class="icon" aria-hidden="true"><use href="#i-view_agenda"></use></svg></button>
+              <button class="segmented__option" type="button" role="radio" aria-checked="false" tabindex="-1" data-action="density" data-density="compact" aria-label="Compact" data-tooltip="Compact"><svg class="icon" aria-hidden="true"><use href="#i-view_headline"></use></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="filter-bar" aria-label="Filters">
+          <div class="filter-bar__chips" id="filter-chips"></div>
+          <div class="filter-bar__end">
+            <span class="filter-bar__result" id="result-count" aria-live="polite"></span>
+            <label class="switch">
+              <input class="switch__input" type="checkbox" id="show-closed" checked>
+              <span class="switch__track"><span class="switch__thumb"></span></span>
+              Closed
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="main__banner" id="banner"></div>
+      <div class="board" id="board" aria-label="Issues by status"></div>
+    </main>
+
+    <aside class="drawer" id="drawer" aria-label="Issue details" aria-hidden="true" tabindex="-1"></aside>
+  </div>
+
+  <!-- menus, tooltip, snackbar -->
+  <div class="menu" id="menu" popover role="menu"></div>
+  <div class="tooltip" id="tooltip" role="tooltip"></div>
+  <div class="snackbar" id="snackbar" role="status" aria-live="polite">
+    <span class="snackbar__message"></span>
+    <button class="snackbar__action" type="button" hidden></button>
+    <button class="btn btn--icon btn--sm snackbar__close" type="button" aria-label="Dismiss"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+  </div>
+
+  <!-- create -->
+  <dialog class="dialog" id="dlg-create" aria-labelledby="create-heading">
+    <form class="dialog__form" id="create-form" method="dialog" novalidate>
+      <header class="dialog__header">
+        <h2 class="dialog__title" id="create-heading">New issue</h2>
+        <button class="btn btn--icon" type="button" data-close-dialog aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </header>
+      <div class="dialog__body">
+        <div class="field" id="create-title-field">
+          <input class="field__input" id="create-title" name="title" type="text" placeholder="Fix crash on empty workspace" maxlength="300" autocomplete="off" aria-describedby="create-title-help" required>
+          <label class="field__label" for="create-title">Title</label>
+          <div class="field__helper" id="create-title-help" aria-live="polite">Imperative and specific: what should be true when it's done.</div>
+        </div>
+
+        <div class="dialog__group">
+          <span class="dialog__group-label" id="create-type-label">Type</span>
+          <div class="segmented segmented--wide" id="create-type" role="radiogroup" aria-labelledby="create-type-label"></div>
+        </div>
+        <div class="dialog__group">
+          <span class="dialog__group-label" id="create-priority-label">Priority · P0 is the most urgent</span>
+          <div class="segmented segmented--wide" id="create-priority" role="radiogroup" aria-labelledby="create-priority-label"></div>
+        </div>
+
+        <label class="field">
+          <textarea class="field__input" name="description" rows="4" placeholder="Context, links, what done looks like" maxlength="8000"></textarea>
+          <span class="field__label">Description</span>
+        </label>
+
+        <div class="dialog__row">
+          <div class="dialog__group">
+            <label class="dialog__group-label" for="create-epic">Epic</label>
+            <span class="select select--block select--tall"><select class="select__input" id="create-epic" name="epic"></select><svg class="icon select__caret" aria-hidden="true"><use href="#i-arrow_drop_down"></use></svg></span>
+          </div>
+          <div class="dialog__group">
+            <label class="dialog__group-label" for="create-assignee">Assignee</label>
+            <span class="select select--block select--tall"><select class="select__input" id="create-assignee" name="assignee"></select><svg class="icon select__caret" aria-hidden="true"><use href="#i-arrow_drop_down"></use></svg></span>
+          </div>
+        </div>
+
+        <label class="field">
+          <input class="field__input" name="labels" type="text" placeholder="board, a11y" autocomplete="off">
+          <span class="field__label">Labels, comma separated</span>
+        </label>
+
+        <div class="dialog__group autocomplete">
+          <label class="field">
+            <input class="field__input" id="create-deps-q" type="text" placeholder="Search open issues by ID or title" autocomplete="off" role="combobox" aria-controls="create-deps-list" aria-expanded="false">
+            <span class="field__label">Blocked by</span>
+          </label>
+          <div class="token-list" id="create-deps"></div>
+          <ul class="autocomplete__list" id="create-deps-list" role="listbox" aria-label="Matching issues"></ul>
+        </div>
+
+        <div class="command" aria-label="Equivalent command">
+          <span class="command__text mono"><span class="command__prompt">$ </span><span id="create-cmd">bd create "Title"</span></span>
+        </div>
+      </div>
+      <footer class="dialog__actions">
+        <label class="checkbox"><input class="checkbox__input" type="checkbox" name="another"><span>Create another</span></label>
+        <span class="dialog__actions-spacer"></span>
+        <button class="btn btn--text" type="button" data-close-dialog>Cancel</button>
+        <button class="btn btn--primary" type="submit" value="create">Create issue<kbd class="btn__kbd">Ctrl Enter</kbd></button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- blocker picker -->
+  <dialog class="dialog" id="dlg-blocker" aria-labelledby="blocker-title">
+    <div class="dialog__form">
+      <header class="dialog__header">
+        <h2 class="dialog__title" id="blocker-title">What blocks this?</h2>
+        <button class="btn btn--icon" type="button" data-close-dialog aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </header>
+      <div class="dialog__body">
+        <p class="dialog__text" id="blocker-sub"></p>
+        <div class="autocomplete">
+          <div class="field">
+            <input class="field__input" id="blocker-q" type="text" placeholder="ID or words from the title" autocomplete="off" role="combobox" aria-controls="blocker-list" aria-expanded="false" aria-describedby="blocker-helper">
+            <label class="field__label" for="blocker-q">Blocking issue</label>
+            <div class="field__helper" id="blocker-helper"></div>
+          </div>
+          <ul class="autocomplete__list" id="blocker-list" role="listbox" aria-label="Open issues"></ul>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- defer -->
+  <dialog class="dialog dialog--sm" id="dlg-defer" aria-labelledby="defer-title">
+    <form class="dialog__form" id="defer-form" method="dialog">
+      <header class="dialog__header"><h2 class="dialog__title" id="defer-title">Defer</h2></header>
+      <div class="dialog__body">
+        <p class="dialog__text">It leaves Ready and comes back on this date.</p>
+        <div class="dialog__options" role="radiogroup" aria-label="Defer until">
+          <label class="radio"><input class="radio__input" type="radio" name="defer" value="tomorrow"><span>Tomorrow</span></label>
+          <label class="radio"><input class="radio__input" type="radio" name="defer" value="monday" checked><span>Next Monday</span></label>
+          <label class="radio"><input class="radio__input" type="radio" name="defer" value="month"><span>In a month</span></label>
+          <label class="radio"><input class="radio__input" type="radio" name="defer" value="date"><span>On a date</span></label>
+          <label class="field field--static dialog__indent">
+            <input class="field__input" id="defer-date" type="date">
+            <span class="field__label">Date</span>
+          </label>
+        </div>
+      </div>
+      <footer class="dialog__actions">
+        <span class="dialog__actions-spacer"></span>
+        <button class="btn btn--text" type="button" data-close-dialog>Cancel</button>
+        <button class="btn btn--primary" type="submit" value="defer">Defer</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- close with reason -->
+  <dialog class="dialog dialog--sm" id="dlg-close" aria-labelledby="close-title">
+    <form class="dialog__form" id="close-form" method="dialog">
+      <header class="dialog__header"><h2 class="dialog__title" id="close-title">Close</h2></header>
+      <div class="dialog__body">
+        <div class="banner" id="close-impact" hidden></div>
+        <label class="field">
+          <textarea class="field__input" id="close-reason" rows="3" placeholder="Fixed in 4e1c, duplicate of…, won't do because…" maxlength="2000"></textarea>
+          <span class="field__label">Reason (optional)</span>
+        </label>
+        <div class="command"><span class="command__text mono"><span class="command__prompt">$ </span><span id="close-cmd"></span></span></div>
+      </div>
+      <footer class="dialog__actions">
+        <span class="dialog__actions-spacer"></span>
+        <button class="btn btn--text" type="button" data-close-dialog>Cancel</button>
+        <button class="btn btn--primary" type="submit" value="close">Close issue</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- delete -->
+  <dialog class="dialog dialog--sm" id="dlg-delete" aria-labelledby="delete-title">
+    <form class="dialog__form" id="delete-form" method="dialog">
+      <header class="dialog__header"><h2 class="dialog__title" id="delete-title">Delete?</h2></header>
+      <div class="dialog__body">
+        <p class="dialog__text">This removes the issue and every dependency that points at it. Closing keeps the history; delete only mistakes and duplicates.</p>
+      </div>
+      <footer class="dialog__actions">
+        <span class="dialog__actions-spacer"></span>
+        <button class="btn btn--text" type="button" data-close-dialog>Keep it</button>
+        <button class="btn btn--primary" type="submit" value="delete">Delete issue</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- shortcuts -->
+  <dialog class="dialog dialog--sm" id="dlg-keys" aria-labelledby="keys-title">
+    <form class="dialog__form" method="dialog">
+      <header class="dialog__header">
+        <h2 class="dialog__title" id="keys-title">Keyboard shortcuts</h2>
+        <button class="btn btn--icon" type="submit" aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"></use></svg></button>
+      </header>
+      <div class="dialog__body">
+        <dl class="shortcuts">
+          <dt>New issue</dt><dd><kbd class="kbd">N</kbd></dd>
+          <dt>Search</dt><dd><kbd class="kbd">/</kbd></dd>
+          <dt>Switch between board and table</dt><dd><kbd class="kbd">V</kbd></dd>
+          <dt>Move between cards or rows</dt><dd><kbd class="kbd">←</kbd><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd><kbd class="kbd">→</kbd></dd>
+          <dt>Open the focused card</dt><dd><kbd class="kbd">Enter</kbd></dd>
+          <dt>Move the focused card</dt><dd><kbd class="kbd">M</kbd></dd>
+          <dt>Close the panel or dialog</dt><dd><kbd class="kbd">Esc</kbd></dd>
+          <dt>Create from the dialog</dt><dd><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Enter</kbd></dd>
+          <dt>This list</dt><dd><kbd class="kbd">?</kbd></dd>
+        </dl>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- prototype only: switch system states -->
+  <div class="proto-switch">
+    <label for="proto-state">Prototype state</label>
+    <span class="select"><select class="select__input" id="proto-state">
+      <option value="board">Board</option>
+      <option value="loading">Loading</option>
+      <option value="empty">Empty workspace</option>
+      <option value="nodb">No database</option>
+      <option value="error">Database error</option>
+    </select><svg class="icon select__caret" aria-hidden="true"><use href="#i-arrow_drop_down"></use></svg></span>
+  </div>
+
+  <script src="js/icons.js"></script>
+  <script src="js/agents.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

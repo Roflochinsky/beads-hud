@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>beads · Omarchy bar module</title>
+  <link rel="stylesheet" href="../fonts/onest.css">
+  <link rel="stylesheet" href="../styles/tokens.css">
+  <link rel="stylesheet" href="../styles/components.css">
+  <link rel="stylesheet" href="tray.css">
+  <link rel="stylesheet" href="omarchy.css">
+</head>
+<body data-host="omarchy">
+  <header class="waybar">
+    <div class="waybar__left" aria-label="Workspaces">
+      <span class="waybar__ws waybar__ws--active">1</span><span class="waybar__ws">2</span><span class="waybar__ws">3</span><span class="waybar__ws">4</span><span class="waybar__ws">5</span>
+    </div>
+    <div class="waybar__clock">Wed 4 Nov 10:42</div>
+    <div class="waybar__right">
+      <button class="waybar__module" id="tray-item" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="tray-host">
+        <span class="tray-mark" aria-hidden="true"><span class="bead bead--done" data-bead="done"></span><span class="bead bead--active" data-bead="active"></span><span class="bead" data-bead="open"></span></span>
+        <span class="tray-count" data-tray-count>6</span>
+        <span class="tray-dot" data-tray-dot hidden></span>
+      </button>
+      <span class="waybar__module" aria-label="Network"><svg class="icon" aria-hidden="true"><use href="#i-wifi"></use></svg></span>
+      <span class="waybar__module" aria-label="Volume"><svg class="icon" aria-hidden="true"><use href="#i-volume_up"></use></svg></span>
+      <span class="waybar__module" aria-label="Battery"><svg class="icon" aria-hidden="true"><use href="#i-battery_full"></use></svg>92%</span>
+    </div>
+  </header>
+
+  <main class="hypr">
+    <section class="hypr__win hypr__win--focus" aria-label="Terminal"><pre class="term" data-term="ready" aria-hidden="true"></pre></section>
+    <section class="hypr__win" aria-label="Agent session"><pre class="term" aria-hidden="true"><span class="term__prompt">claude-1</span> working on <span class="term__prompt">bb-a3f8</span>
+
+● Read     src/ready.js
+● Edit     src/ready.js  +14 -3
+● Run      bd ready --json
+  matches the board
+● Heartbeat sent
+
+<span class="term__dim">waiting for review</span><span class="term__cursor"></span></pre></section>
+  </main>
+
+  <div class="tray-host" id="tray-host" role="dialog" aria-label="beads-board"></div>
+
+  <script src="../js/icons.js"></script>
+  <script src="../js/agents.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="tray.js"></script>
+</body>
+</html>
