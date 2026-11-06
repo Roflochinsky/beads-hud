@@ -4,6 +4,8 @@
 
 После извлечения Tern в [beads-tern](https://github.com/Roflochinsky/beads-tern) на Linux x64 прошли `npm ci`, проверки TypeScript, сборка, 27 тестов и real-Beads smoke. `npm run package:plugins` создал только архивы Paseo и Omarchy; Tern удалён из сборки и будущего release-контракта.
 
+[CI после отделения Tern](https://github.com/Roflochinsky/beads-hud/actions/runs/42286669677) прошёл на коммите `12bdbc9f7534b9b8e7556a49654826065ae8588f`: browser HUD, Linux/macOS сборки, real-Beads smoke, упаковка и запуск packaged renderer через настоящий IPC. Новый release не создавался.
+
 Это проверка текущего дерева, не новый выпуск приложений. Опубликованные `native-v0.1.2` и его Tern-архив сохранены. Для следующего native-релиза требуется новая версия.
 
 ## Статус переноса
