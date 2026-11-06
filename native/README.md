@@ -2,7 +2,7 @@
 
 Beads внутри Tern и Paseo, плюс приложение системной панели для Omarchy/Linux и macOS.
 
-Самостоятельный пакет `@roflochinsky/beads-hud-native` версии **0.1.1** находится в `native/` публичного репозитория [beads-hud](https://github.com/Roflochinsky/beads-hud). Корневой браузерный HUD остаётся отдельным пакетом версии 0.6.0 с Node.js ≥22: его установка не добавляет Electron, React Native или требование Node.js 24. Нативный пакет не зависит от соседних репозиториев и не публикуется в npm. Плагин Orca поддерживается отдельно и не входит в эти исходники или релизы.
+Самостоятельный пакет `@roflochinsky/beads-hud-native` версии **0.1.2** находится в `native/` публичного репозитория [beads-hud](https://github.com/Roflochinsky/beads-hud). Корневой браузерный HUD остаётся отдельным пакетом версии 0.6.0 с Node.js ≥22: его установка не добавляет Electron, React Native или требование Node.js 24. Нативный пакет не зависит от соседних репозиториев и не публикуется в npm. Плагин Orca поддерживается отдельно и не входит в эти исходники или релизы.
 
 Данные читает и изменяет установленный `bd`. Приложение не создаёт вторую базу задач, не инициализирует пользовательские проекты и не закрывает задачи по состоянию агента.
 
@@ -91,11 +91,11 @@ Workflow [`.github/workflows/native.yml`](../.github/workflows/native.yml) в к
 6. Запуск упакованного приложения, операции через настоящий renderer IPC и сохранение скриншота.
 7. Архивы плагинов, Omarchy-интеграции и контрольные суммы.
 
-Push тега `native-v<package.json version>` (сейчас `native-v0.1.1`) публикует GitHub Release только после успеха браузерного gate и обеих нативных платформ. Версия берётся из `native/package.json`; обычные теги `v*` не выпускают нативный пакет. Actions закреплены на commit SHA. Workflow не публикует пакеты в npm.
+Push тега `native-v<package.json version>` (сейчас `native-v0.1.2`) публикует GitHub Release только после успеха браузерного gate и обеих нативных платформ. Версия берётся из `native/package.json`; обычные теги `v*` не выпускают нативный пакет. Actions закреплены на commit SHA. Workflow не публикует пакеты в npm.
 
 Нативный релиз создаётся с `--latest=false`, чтобы не заменять основную линию браузерного HUD в GitHub Releases.
 
-Релиз содержит ровно девять артефактов и `SHA256SUMS`: Linux x64 AppImage/tar.gz, macOS x64 и arm64 DMG/ZIP, `beads-tern-0.1.1.tar.gz`, `beads-paseo-0.1.1.tar.gz`, `beads-omarchy-0.1.1.tar.gz`. Сборщик релиза проверяет имена, комплектность и SHA256; посторонние архивы не допускаются.
+Релиз содержит ровно девять артефактов и `SHA256SUMS`: Linux x64 AppImage/tar.gz, macOS x64 и arm64 DMG/ZIP, `beads-tern-0.1.2.tar.gz`, `beads-paseo-0.1.2.tar.gz`, `beads-omarchy-0.1.2.tar.gz`. Electron Builder обозначает архитектуру Linux AppImage как `x86_64`, а tar.gz как `x64`. Сборщик релиза проверяет имена, комплектность и SHA256; посторонние архивы не допускаются.
 
 ### Подпись macOS
 

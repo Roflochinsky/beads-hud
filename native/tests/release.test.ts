@@ -21,7 +21,7 @@ test('native release accepts its own version tag and rejects browser or mismatch
 test('release collection accepts exactly the native assets and rejects missing or foreign archives', async () => {
   const collect = resolve('scripts/collect-release.mjs');
   const files = [
-    `beads-board-${version}-linux-x64.AppImage`,
+    `beads-board-${version}-linux-x86_64.AppImage`,
     `beads-board-${version}-linux-x64.tar.gz`,
     `beads-board-${version}-macos-x64.dmg`,
     `beads-board-${version}-macos-x64.zip`,

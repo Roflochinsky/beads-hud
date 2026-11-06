@@ -1,11 +1,17 @@
 # Changelog
 
+## 0.1.2 — native release collection
+
+- Corrected the release collector to accept Electron Builder's actual `linux-x86_64.AppImage` filename while retaining the strict nine-asset and checksum contract.
+- Corrected the regression fixture to use the observed CI artifact name; the previous collector fails that case.
+- Kept the unsuccessful `native-v0.1.1` tag unchanged and advanced native package/manifests for a new release.
+
 ## 0.1.1 — repository split
 
 - Moved native Tern/Paseo/Omarchy and Linux/macOS delivery into the independent `native/` package in beads-hud; the root browser HUD remains 0.6.0 with its existing Node.js 22 contract.
 - Removed the separate IDE plugin adapter, transport, build output and release archive from this package.
 - Added root-level native CI, a browser HUD test gate, `native-v*` version checks and an exact native release asset contract.
-- Updated package identities, public documentation and generated-output exclusions. Migration checks are pending; earlier runtime evidence below predates this move.
+- Updated package identities, public documentation and generated-output exclusions. Linux/macOS builds, packaged renderer smoke and the browser HUD gate passed after migration; initial publication failed on the AppImage filename contract corrected in 0.1.2.
 
 ## 0.1.0 — 2026-11-06, before migration
 
