@@ -5,28 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>beads-hud</title>
 <link rel="stylesheet" href="/beads-hud.css" />
+<link rel="stylesheet" href="/workspace.css" />
 </head>
 <body>
-<!--
-THESIS: A macOS Liquid Glass desktop for thinking — every chrome layer is a
-floating glass slab over a colorful wallpaper, and the same task set reads three
-ways (board, table, graph), refusing the opaque white tracker page and the
-edge-to-edge sidebar this category ships.
-OWN-WORLD: Apple's Liquid Glass, light promo scene. Aurora wallpaper of sky
-blue/lavender/pink/mint; translucent panels (backdrop blur + saturate) with a
-specular top edge; capsule controls; Apple blue #0071e3 as the only tint; status
-carried by a small coloured lamp; Inter standing in for SF Pro, JetBrains Mono
-for machine strings. Dark scene by manual toggle only.
-STORY: He picks a project in the floating toolbar, reads the board as four glass
-columns, flips the segmented capsule to a sortable table or the dependency graph
-(epic tree + red blocker arrows), opens a card into the glass drawer.
-FIRST VIEWPORT: Floating glass rail left, glass toolbar above, kind rail and four
-glass columns over the wallpaper; the blue "Новая задача" capsule sits top right;
-the board/table/graph capsule heads the task view.
-FORM: Direction pinned by the user's brief (macOS Liquid Glass); a pinned brief
-outranks the roll, so no seed was drawn.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
--->
+<!-- Quiet workspace: one persistent project sidebar, paper-white reading
+surfaces, compact controls and a restrained violet action. Local bd remains
+ the source of truth; board, list, graph, docs and actions share their original data flows. -->
 
 <svg class="sprite" aria-hidden="true">
   <symbol id="i-board" viewBox="0 0 20 20"><rect x="2.75" y="2.75" width="5.5" height="14.5" rx="1.5"/><rect x="11.75" y="2.75" width="5.5" height="8.5" rx="1.5"/></symbol>
@@ -46,28 +30,33 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
   <symbol id="i-refresh" viewBox="0 0 20 20"><path d="M15.4 11.5a5.6 5.6 0 1 1-.9-4.6"/><path d="M15.9 3.6v3.3h-3.3"/></symbol>
 </svg>
 
-<nav class="rail glass" aria-label="Разделы">
+<nav id="workspace-nav" class="rail glass" aria-label="Разделы">
   <a class="rail__mark" href="/" aria-label="beads-hud">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 1.5C6 6 6 18 12 22.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.4 8.4h19.2M2.4 15.6h19.2" stroke="currentColor" stroke-width="1.4"/></svg>
+    <span class="rail__brand">beads-hud</span>
   </a>
-  <button class="rail__tab" id="tab-board" type="button" aria-current="true" title="Задачи">
-    <svg class="ico" aria-hidden="true"><use href="#i-board"/></svg>
-  </button>
-  <button class="rail__tab" id="tab-docs" type="button" aria-current="false" title="Документы">
-    <svg class="ico" aria-hidden="true"><use href="#i-docs"/></svg>
-  </button>
-  <button class="rail__tab rail__tab--foot" id="theme" type="button" title="Тема: светлая">
-    <svg class="ico" aria-hidden="true"><use href="#i-theme"/></svg>
-  </button>
-</nav>
-
-<header class="top glass">
-  <span class="dot dot--project" aria-hidden="true"></span>
+  <div class="rail__project"><span class="rail__eyebrow">Рабочее пространство</span><div class="rail__picker">  <span class="dot dot--project" aria-hidden="true"></span>
   <label class="crumb">
     <select id="project" aria-label="Проект"></select>
     <svg class="ico ico--sm" aria-hidden="true"><use href="#i-down"/></svg>
   </label>
-  <span class="crumb__sep">/</span>
+</div></div>
+  <button class="rail__tab" id="tab-board" type="button" aria-current="true" title="Задачи">
+    <svg class="ico" aria-hidden="true"><use href="#i-board"/></svg><span class="rail__label">Задачи</span>
+  </button>
+  <button class="rail__tab" id="tab-docs" type="button" aria-current="false" title="Документы">
+    <svg class="ico" aria-hidden="true"><use href="#i-docs"/></svg><span class="rail__label">Документы</span>
+  </button>
+  <aside class="kinds" id="kinds" aria-label="Виды работ"></aside>
+  <div class="rail__footer"><span class="rail__local">Локальный проект · bd</span>
+  <button class="rail__tab rail__tab--foot" id="theme" type="button" title="Тема: светлая">
+    <svg class="ico" aria-hidden="true"><use href="#i-theme"/></svg><span class="rail__label" id="theme-label">Светлая тема</span>
+  </button></div>
+</nav>
+
+<header class="top glass">
+  <button class="icon-btn mobile-nav" id="mobile-nav" type="button" aria-label="Проект и фильтры" aria-controls="workspace-nav" aria-expanded="false"><svg class="ico ico--sm" aria-hidden="true"><use href="#i-folder"/></svg></button>
+  <svg class="ico ico--sm" aria-hidden="true"><use href="#i-board"/></svg>
   <span class="crumb crumb--static" id="view-name">задачи</span>
   <span class="top__note" id="crumb"></span>
   <span class="spacer"></span>
@@ -82,7 +71,6 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 </header>
 
 <main class="canvas" id="canvas">
-  <aside class="kinds glass" id="kinds" aria-label="Виды работ"></aside>
   <section class="view" id="view-board">
     <div class="view__bar">
       <div class="seg" role="group" aria-label="Вид задач" style="--seg-n:3" id="task-seg">
@@ -111,6 +99,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
     <div class="board" id="board"></div>
     <div class="tbl" id="tbl" hidden></div>
     <div class="graph" id="graphview" hidden></div>
+    <footer class="view__footer"><span id="task-count"></span><span>beads · источник данных</span></footer>
   </section>
 
   <section class="view" id="view-docs" hidden>

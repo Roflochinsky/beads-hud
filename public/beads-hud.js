@@ -59,12 +59,12 @@ function sameEventsRev(seen, b) {
 let editing = null
 
 /* ── Theme ─────────────────────────────────────────────────────── */
-// Liquid glass lives on the light promo wallpaper; dark is the exception
-// someone deliberately asks for.
+// Light-first workspace; theme changes only through the explicit toggle.
 const applyTheme = (t) => {
   if (t === 'dark') document.documentElement.dataset.theme = 'dark'
   else delete document.documentElement.dataset.theme
   $('theme').title = t === 'dark' ? 'Тема: тёмная' : 'Тема: светлая'
+  $('theme-label').textContent = t === 'dark' ? 'Тёмная тема' : 'Светлая тема'
 }
 applyTheme(localStorage.getItem('beadshud.theme'))
 $('theme').onclick = () => {
@@ -73,9 +73,46 @@ $('theme').onclick = () => {
   applyTheme(next)
 }
 
+// On narrow screens, keep project selection and every filter reachable.
+function setMobileNav(open, { restoreFocus = true } = {}) {
+  const nav = $('workspace-nav')
+  const trigger = $('mobile-nav')
+  const wasOpen = nav.classList.contains('rail--open')
+  nav.classList.toggle('rail--open', open)
+  trigger.setAttribute('aria-expanded', String(open))
+  if (open) $('project').focus()
+  else if (wasOpen && restoreFocus) trigger.focus()
+}
+$('mobile-nav').onclick = () => setMobileNav($('mobile-nav').getAttribute('aria-expanded') !== 'true')
+document.addEventListener('keydown', (event) => {
+  const nav = $('workspace-nav')
+  if (!nav.classList.contains('rail--open')) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    setMobileNav(false)
+  } else if (event.key === 'Tab') {
+    const controls = [...nav.querySelectorAll('a[href], button:not(:disabled), select:not(:disabled)')]
+      .filter((node) => node.getClientRects().length)
+    const first = controls[0]
+    const last = controls[controls.length - 1]
+    if (event.shiftKey && (document.activeElement === first || !nav.contains(document.activeElement))) {
+      event.preventDefault()
+      last?.focus()
+    } else if (!event.shiftKey && (document.activeElement === last || !nav.contains(document.activeElement))) {
+      event.preventDefault()
+      first?.focus()
+    }
+  }
+})
+document.addEventListener('click', (event) => {
+  if (!$('workspace-nav').contains(event.target) && !$('mobile-nav').contains(event.target))
+    setMobileNav(false, { restoreFocus: false })
+})
+
 /* ── Views ─────────────────────────────────────────────────────── */
 
 function show(next) {
+  setMobileNav(false)
   view = next
   $('view-board').hidden = next !== 'board'
   $('view-docs').hidden = next !== 'docs'
@@ -115,6 +152,10 @@ $('tv-table').onclick = () => setTaskView('table')
 $('tv-graph').onclick = () => setTaskView('graph')
 
 function renderTasks() {
+  const scope = sel === 'all' ? '' : sel === 'loose' ? 'Без эпика'
+    : sel.startsWith('kind:') ? KINDS.find((kind) => 'kind:' + kind.key === sel)?.label || ''
+    : data.groups.find((group) => group.id === sel)?.title || ''
+  $('task-count').textContent = waiting && !data.issues.length ? 'Загружаю задачи…' : `${scope ? scope + ' · ' : ''}${visible(selected()).length} из ${data.issues.length} задач`
   $('closed-n').textContent = String(data.issues.filter((i) => i.column === 'closed').length)
   if (taskView === 'board') renderBoard()
   else if (taskView === 'table') renderTable()
@@ -163,6 +204,7 @@ function kindItem(label, meta, key, child) {
     localStorage.setItem('beadshud.sel', key)
     renderKinds()
     renderTasks()
+    setMobileNav(false)
   }
   return b
 }
@@ -367,7 +409,7 @@ function renderTable() {
   for (const i of list) {
     const tr = el('tr', (i.status === 'closed' ? 'is-closed' : '') + (task === i.id ? ' is-open' : ''))
     const cell = (node) => tr.appendChild(el('td')).appendChild(node)
-    const st = el('span', 'tbl__status')
+    const st = el('span', 'tbl__status tbl__status--' + i.column)
     st.appendChild(el('span', 'light' + (i.column === 'todo' ? '' : ' light--' + i.column)))
     st.appendChild(el('span', null, COLNAME[i.column]))
     cell(st)
